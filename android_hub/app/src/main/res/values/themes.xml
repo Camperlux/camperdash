@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The hub's own palette (static/app.css), so nothing flashes white
+         between the app and the pages. -->
+    <style name="Theme.Hub" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:colorAccent">@color/brand</item>
+    </style>
+    <color name="bg">#0F0E12</color>
+    <color name="brand">#D3A94A</color>
+</resources>

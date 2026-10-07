@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IntrepidVan &middot; Settings</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+  /* Settings as a menu of groups, like a phone's settings: one group open at a time */
+  .smenu{display:grid;gap:10px;max-width:1250px;margin:0 auto}
+  .smenu a{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px;color:var(--txt);text-decoration:none}
+  .smenu a:hover{border-color:var(--brand)}
+  .smenu .t{font-size:17px;font-weight:600} .smenu .d{font-size:13px;color:var(--muted);margin-top:3px}
+  .smenu .chev{margin-left:auto;color:var(--muted);font-size:22px}
+  .sgroup{display:none} .sgroup.open{display:grid}
+  #sback{display:none;margin:0 auto 10px;max-width:1250px}
+  #savefoot{display:none;position:sticky;bottom:0;max-width:1250px;margin:12px auto 0;z-index:5}
+.ledk{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+.ledk.blink{animation:ledk 1.2s steps(1) infinite}
+@keyframes ledk{50%{opacity:.15}}
+/* an on/off switch: a checkbox drawn as a slider */
+.tgl{position:relative;display:inline-block;width:42px;height:24px;flex:0 0 auto;cursor:pointer}
+.tgl input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.tgl span{position:absolute;inset:0;border-radius:12px;background:var(--panel2);border:1px solid var(--line);transition:.15s}
+.tgl span:after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:.15s}
+.tgl input:checked + span{border-color:var(--accent)}
+.tgl input:checked + span:after{left:21px;background:var(--accent)}
+.tgl input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.eye{padding:5px 8px;line-height:0;margin-left:-4px;color:var(--muted)} .eye.on{color:var(--accent);border-color:var(--accent)}
+.n-off .n-ssid{opacity:.5;text-decoration:line-through}
+.wxnow{margin:12px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:14px;line-height:1.45}
+.wxnow b{color:var(--txt)}
+.swico{width:22px;height:22px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--brand,#d3a94a)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><img class="logo" src="/logo.jpg" alt="">Intrepid<span class="dot">Van</span> &middot; Settings</h1>
+  <nav><a href="/">&lsaquo; Back to the van</a><a href="/settings" class="active">Settings</a></nav>
+</header>
+<div class="statuses">
+  <div id="linkst" class="busy"><span class="led"></span><span id="linktext">Loading settings&hellip;</span></div>
+  <div id="netst"><span class="led"></span><span id="nettext">Network</span></div>
+</div>
+
+<div class="grid">
+
+<div class="section">More detail</div>
+<div class="card wide">
+  <div class="label">Pages beyond the van display</div>
+  <div class="sub">What the app and the van display leave out, for when you want every figure.</div>
+  <div class="ctl" style="margin-top:12px;flex-wrap:wrap">
+    <a class="btn" href="/details">Battery and chargers &rsaquo;</a>
+    <a class="btn" href="/heater">Heater: every control and reading &rsaquo;</a>
+    <a class="btn" href="/weather">Forecast and location map &rsaquo;</a>
+  </div>
+  <div class="sub">Battery and chargers: every cell, temperatures, cycles, today's extremes, the
+    DC-DC and mains charger figures, the charge and discharge switches and the trend chart.
+    Heater: the fuel choice, fan speed, frost protection's battery and run-time limits, and the
+    heater's full status. Forecast: the week ahead and a map to set where the van is.</div>
+</div>
+
+<div class="section">Bluetooth devices</div>
+<div class="card wide">
+  <div class="label">Paired equipment</div>
+  <div class="sub">Scan for nearby Bluetooth devices, then choose which one is which. The hub only
+    talks to the devices assigned here.</div>
+  <div class="ctl">
+    <button class="btn" id="blescan">Scan for devices</button>
+    <span class="sub" id="blestat" style="margin:0">Not scanned yet</span>
+  </div>
+  <div id="bledevs" class="chips"></div>
+  <div id="assign"></div>
+  <div class="ctl" style="margin-top:12px">
+    <label>Victron key
+      <input id="vkey" type="password" placeholder="32 hex characters" style="width:230px" autocomplete="off">
+    </label>
+    <span class="sub" id="vkeystat" style="margin:0"></span>
+  </div>
+  <div class="sub">The Victron reports over an encrypted advert. Its key is in the VictronConnect
+    app under Product info &rarr; Instant readout.</div>
+</div>
+
+<div class="section">Network</div>
+<div class="card wide">
+  <div class="label">Wi-Fi mode</div>
+  <div class="ctl" id="modebtns">
+    <button class="btn" data-mode="sta">Join a network</button>
+    <button class="btn" data-mode="ap">Own hotspot</button>
+  </div>
+  <div class="sub" id="modehelp"></div>
+
+  <div style="margin-top:14px">
+    <div class="label">On your phone's home screen</div>
+    <div class="sub">Open the hub's page, then on Android: Chrome's <b>&#8942;</b> menu, <b>Add to Home
+      screen</b>. On an iPhone: Safari's <b>Share</b> button, <b>Add to Home Screen</b>. It gets the
+      Camperlux icon and opens full screen, like an app. It opens the address it was added from
+      (<b id="hsaddr"></b>): the hotspot's is always 192.168.4.1, but on another network the hub's can
+      change &mdash; reserve it in that router's settings so the icon keeps working.</div>
+    <div id="apkbox" style="display:none;margin-top:14px">
+      <div class="label">The Android app</div>
+      <div class="sub">Finds the hub by itself on any network, and keeps finding it if its address
+        changes. Download it here &mdash; no internet needed &mdash; then open the file. Android asks
+        once to allow installs from your browser: that is expected for an app not from the Play Store.</div>
+      <a id="apklink" class="btn" href="/camperlux.apk" download="camperlux.apk"
+         style="display:inline-block;margin-top:10px;text-decoration:none">Download the Android app</a>
+    </div>
+  </div>
+
+  <div id="stabox" style="margin-top:14px">
+    <div class="label">Networks to join</div>
+    <div class="sub">Tried in this order &mdash; home first, phone hotspot second. Only networks
+      actually on the air are attempted, so being away from home costs no waiting. Switch one off
+      to stop the hub joining it without losing its password; the van display stops using it too.</div>
+    <div id="netlist"></div>
+    <div class="ctl">
+      <button class="btn" id="wifiscan">Scan for networks</button>
+      <button class="btn" id="netadd">Add network</button>
+      <span class="sub" id="wifistat" style="margin:0"></span>
+    </div>
+    <div id="wifinets" class="chips"></div>
+  </div>
+
+  <div style="margin-top:14px">
+    <div class="label">Timing</div>
+    <div class="ctl">
+      <label>Wait per network
+        <input id="jointo" type="number" min="5" max="60" step="5" style="width:64px"> s</label>
+      <label>Look again every
+        <input id="retrys" type="number" min="30" max="3600" step="30" style="width:74px"> s</label>
+    </div>
+    <div class="sub">How long to wait for each network before trying the next, and how often to
+      look again once the hub has given up and is on its hotspot alone. A shorter retry picks up
+      your home network sooner when you pull onto the drive; a longer one uses less power.</div>
+  </div>
+
+  <div id="apbox" style="margin-top:14px">
+    <div class="label">Hotspot the hub creates</div>
+    <div class="ctl">
+      <button class="btn" id="apalways">Hotspot always on</button>
+      <span class="sub" id="apalwaysnote" style="margin:0"></span>
+    </div>
+    <div class="ctl">
+      <label>Name <input id="apssid" style="width:190px" autocomplete="off"></label>
+      <label>Password <input id="appass" type="password" style="width:190px" placeholder="unchanged" autocomplete="new-password"></label>
+    </div>
+    <div class="sub" id="apipnote">&nbsp;</div>
+    <div class="sub">The hotspot address is fixed: its DHCP pool cannot follow a change, so moving
+      it would hand clients addresses they could not route from. Where the range collides with a
+      network the hub joins &mdash; as it does with this van&rsquo;s home router &mdash; the
+      hotspot stands down while that network is connected instead.</div>
+    <div class="sub">At least 8 characters. This hotspot is how you get back in if the Wi-Fi
+      details above are wrong, so it is always available.</div>
+  </div>
+</div>
+
+<div class="section">Weather</div>
+<div class="card wide">
+  <div class="label">Where the forecast is for</div>
+  <div class="sub">The hub fetches the forecast itself and keeps the last copy, so the weather page
+    still works on the hotspot where your phone has no internet.</div>
+  <div class="ctl" id="wxmode">
+    <button class="btn" type="button" data-wx="auto">Automatic (GPS)</button>
+    <button class="btn" type="button" data-wx="fixed">Fixed location</button>
+  </div>
+  <div class="sub" id="wxmodehelp"></div>
+  <div class="wxnow" id="wxnow">Checking&hellip;</div>
+  <div class="sub" id="wxstat"></div>
+
+  <div class="label" style="margin-top:16px">Fixed location</div>
+  <div class="sub" id="fixhelp"></div>
+  <div class="ctl">
+    <label>Latitude <input id="lat" style="width:110px" autocomplete="off"></label>
+    <label>Longitude <input id="lon" style="width:110px" autocomplete="off"></label>
+    <label>Place <input id="place" style="width:150px" placeholder="optional" autocomplete="off"></label>
+  </div>
+  <div class="ctl">
+    <button class="btn" type="button" id="usegps">Use the van&rsquo;s GPS position</button>
+    <button class="btn" type="button" id="usehere">Use this phone&rsquo;s location</button>
+  </div>
+  <div class="sub" id="locstat"></div>
+</div>
+
+<div class="section">Van display</div>
+<div class="card wide">
+  <div class="label">Drive checklist</div>
+  <div class="sub">The things to tick off on the van display's Drive page before setting off,
+    one per line &mdash; up to 10, each up to 32 characters. The hook-up, the heater, alarms and
+    the battery are checked on their own and do not need listing. The page comes up by itself
+    when the engine starts with anything unticked.</div>
+  <textarea id="checklist" rows="7" style="width:100%;margin-top:10px;box-sizing:border-box;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;line-height:1.5;resize:vertical"></textarea>
+
+  <div class="label" style="margin-top:18px">Switch names</div>
+  <div class="sub">The six buttons on the Switches page, in order from top left, up to 14
+    characters each. Leave one blank to go back to its original name. Each switches the relay of
+    the same number on the hub (on: the relay is energised, COM connected to NO).</div>
+  <div id="swnames" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px"></div>
+
+  <div class="label" style="margin-top:18px">Display software</div>
+  <div class="sub">The van display updates itself from the hub: it looks two minutes after it
+    starts and then every hour, and changes over when nobody is using it. If a new version will not
+    start, it goes back to the one before.</div>
+  <div class="sub" id="dfw" style="margin-top:8px">&ndash;</div>
+  <button class="btn" id="dfwgo" type="button" style="margin-top:8px">Update the display now</button>
+  <span class="sub" id="dfwres" style="margin-left:8px"></span>
+
+  <div class="label" style="margin-top:18px">Sound</div>
+  <div class="sub">How loud the van display is. 100 is its full design loudness and each step
+    down is half a decibel, so 80 is noticeably quieter and 50 is soft. Touch sounds can be turned
+    right down to 0 (off). The alarm cannot go below 30 &mdash; to silence alarms altogether, use
+    <b>Sound</b> under Alerts below.</div>
+  <div class="ctl" style="margin-top:10px">
+    <label class="sub" style="margin:0;min-width:150px">Touch sounds</label>
+    <input id="clickvol" type="range" min="0" max="100" step="5" style="flex:1">
+    <span class="sub" id="clickvolv" style="margin:0;min-width:40px">&ndash;</span>
+  </div>
+  <div class="ctl" style="margin-top:6px">
+    <label class="sub" style="margin:0;min-width:150px">Alarm</label>
+    <input id="alarmvol" type="range" min="30" max="100" step="5" style="flex:1">
+    <span class="sub" id="alarmvolv" style="margin:0;min-width:40px">&ndash;</span>
+  </div>
+
+  <div class="label" style="margin-top:18px">Screen</div>
+  <div class="sub">These change straight away on the display, without Save.</div>
+  <div class="ctl" style="margin-top:10px">
+    <label class="sub" style="margin:0;min-width:150px">Brightness</label>
+    <input id="vdbright" type="range" min="10" max="100" step="5" style="flex:1">
+    <span class="sub" id="vdbrightv" style="margin:0;min-width:40px">&ndash;</span>
+  </div>
+  <div class="ctl" style="margin-top:6px">
+    <label class="sub" style="margin:0;min-width:150px">Night mode</label>
+    <select id="vdnight"><option value="auto">Automatic (sunset to sunrise)</option>
+      <option value="on">Always on</option><option value="off">Off</option></select>
+  </div>
+  <div class="ctl" style="margin-top:6px">
+    <button class="btn" id="vddim">Dims when idle</button>
+    <button class="btn" id="vdoff">Off mode</button>
+  </div>
+  <div class="sub">Left alone by day the display shows the logo after a minute, then dims (unless
+    dimming is off). At night, and in off mode, it goes dark instead. Off mode keeps it dark between
+    touches until you switch it back or the morning comes. Alarms, panic and timers always wake it.</div>
+
+  <div class="label" style="margin-top:18px">Status light</div>
+  <div class="sub">The light on the back of the van display. Switching it off saves a little battery;
+    it changes straight away, without Save. Alarms still flash it.</div>
+  <div class="ctl" style="margin-top:10px">
+    <button class="btn" id="vdled">Status light on</button>
+  </div>
+  <table style="margin-top:10px;border-collapse:collapse"><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk" style="background:#ffaa28"></span> <b>Gold, steady</b></td><td class="sub" style="padding:4px 0;margin:0">All is well. Shown while the screen is on; dim when the screen is dimmed or at night.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk" style="background:#ff6e00"></span> <b>Amber, steady</b></td><td class="sub" style="padding:4px 0;margin:0">The van battery is below 20%.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk blink" style="background:#c8c8c8"></span> <b>White, blinking</b></td><td class="sub" style="padding:4px 0;margin:0">The display cannot reach the hub, or has no Wi-Fi.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk blink" style="background:linear-gradient(90deg,#f85149 50%,#3a7bff 50%)"></span> <b>Red and blue, flashing</b></td><td class="sub" style="padding:4px 0;margin:0">An alarm nobody has cleared. <b>Always shown</b>, even with the status light off.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk" style="background:#ff7a1e"></span> <b>Warm, fading up</b></td><td class="sub" style="padding:4px 0;margin:0">The alarm clock is ringing (a sunrise). Always shown.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk" style="background:conic-gradient(#f85149,#d29922,#3fb950,#3a7bff,#b36bff,#f85149)"></span> <b>Any colour, or changing</b></td><td class="sub" style="padding:4px 0;margin:0">The ambient light &mdash; a separate switch, on the Lights page. It stays on with the screen off.</td></tr><tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><span class="ledk" style="background:#1c1a22;border:1px solid var(--line)"></span> <b>Off</b></td><td class="sub" style="padding:4px 0;margin:0">The screen is off, or the status light is switched off here.</td></tr></table>
+</div>
+
+<div class="section">Alerts</div>
+<div class="card wide">
+  <div class="label">Safety warnings</div>
+  <div class="sub">Warnings are evaluated on the hub, not in the browser, every poll cycle
+    (about 5 s) from the live device readings, and raised on the first reading that shows the
+    condition &mdash; there is no hold-off. Every open page, the van display and the phone app ask
+    the hub every 2 s, so a warning reaches them within seconds. <b>Clear alarm</b> on any of them
+    clears it on all of them; it sounds again the next time the condition arises. Switching a
+    warning off stops it being evaluated at all: no banner and no sound anywhere. <b>Sound</b>
+    below is separate and applies to all of them; the banner always shows regardless.</div>
+  <div id="alertlist"></div>
+  <div class="ctl" style="margin-top:12px">
+    <button class="btn" id="alertsound">Sound on</button>
+    <span class="sub" id="alertsoundnote" style="margin:0"></span>
+  </div>
+  <div class="ctl" style="margin-top:12px">
+    <label class="sub" style="margin:0;min-width:150px">Low battery below</label>
+    <input id="lowsoc" type="number" min="5" max="80" step="1" style="width:80px">
+    <span class="sub" style="margin:0">% charge</span>
+  </div>
+  <div class="ctl" style="margin-top:12px">
+    <button class="btn" id="alerttest">Test alarm</button>
+    <span class="sub" id="alerttestnote" style="margin:0">Sounds on every screen and phone
+      for up to a minute, so you can check they all go off.</span>
+  </div>
+</div>
+
+<div class="card wide">
+  <div class="label">Panic alarm</div>
+  <div class="sub">Sets off the van display's red and blue beacon and siren, and the alarm on
+    every open page and phone. Hold the button for one second so a stray tap cannot set it off.
+    <b>Stop panic</b> in the alert bar, or STOP on the display, stops it everywhere; it stops by
+    itself after 30 minutes.</div>
+  <div class="ctl" style="margin-top:12px">
+    <button class="btn" id="sosbtn" type="button" style="background:#d63b33;color:#fff;border-color:#d63b33;
+      font-weight:700;touch-action:none;background-image:linear-gradient(90deg,rgba(255,255,255,.35) var(--p,0%),transparent 0)">Hold for SOS</button>
+    <span class="sub" id="sosnote" style="margin:0"></span>
+  </div>
+</div>
+
+<div class="section" style="display:none">Display</div>
+<div class="card wide" style="display:none">
+  <div class="label">Panel on the van</div>
+  <div class="sub">The 128&times;64 OLED beside the hub. It is a monochrome panel &mdash; the colour
+    is fixed in the glass and cannot be changed in software &mdash; but brightness, which way up it
+    reads and how often it redraws are all set here. Changes take effect on the screen as soon as
+    you save; none of them need a restart.</div>
+  <div class="ctl" style="margin-top:12px">
+    <button class="btn" id="dispon">Screen on</button>
+    <button class="btn" id="dispinv">Normal</button>
+    <button class="btn" id="disprot">Upright</button>
+  </div>
+  <div class="sub" id="dispnote" style="margin-top:8px"></div>
+  <div style="margin-top:14px">
+    <div class="label">Brightness <span class="sub" id="dispbrightval" style="margin:0"></span></div>
+    <input type="range" id="dispbright" min="1" max="255" step="1" style="width:100%;max-width:340px">
+    <div class="sub">Full brightness is uncomfortable in a dark van at night. There is no
+      zero &mdash; a black screen is indistinguishable from a broken one, so use the switch above
+      to turn it off.</div>
+  </div>
+  <div style="margin-top:14px">
+    <div class="label">Redraw every</div>
+    <div class="ctl">
+      <input type="number" id="disprefresh" min="0.5" max="60" step="0.5" style="width:90px">
+      <span class="sub" style="margin:0">seconds</span>
+    </div>
+    <div class="sub">The readings themselves only update once per poll cycle, so redrawing faster
+      than that shows the same numbers again over I&sup2;C for nothing.</div>
+  </div>
+</div>
+
+
+<div class="card wide" style="display:none">
+  <div class="label">Page layouts</div>
+  <div class="sub">How the Overview and Level pages draw themselves. These are stored on the hub,
+    not in this browser, so a van is set up once and every phone, tablet and laptop that opens it
+    agrees. A change takes effect on the next refresh &mdash; no reload needed.</div>
+
+  <div class="ctl" style="margin-top:14px">
+    <label class="sub" style="margin:0;min-width:104px">Overview</label>
+    <select id="viewoverview" style="min-width:190px">
+      <option value="auto">Automatic</option>
+      <option value="diagram">Flow diagram</option>
+      <option value="cards">Cards</option>
+    </select>
+  </div>
+  <div class="sub" style="margin-top:6px">The flow diagram is a wide drawing, and on a phone it
+    scales down until the figures on it cannot be read. <b>Cards</b> shows the same readings as
+    large tiles that stay legible at any width. <b>Automatic</b> picks the diagram on a wide screen
+    and cards on a narrow one, which suits a van that is looked at from both.</div>
+
+  <div class="ctl" style="margin-top:14px">
+    <label class="sub" style="margin:0;min-width:104px">Level</label>
+    <select id="viewlevel" style="min-width:190px">
+      <option value="bubble">Spirit level</option>
+      <option value="van">Van attitude</option>
+    </select>
+  </div>
+  <div class="sub" style="margin-top:6px"><b>Spirit level</b> is the bubble vial: the bubble floats
+    to the high side, so you drive or ramp towards it. <b>Van attitude</b> draws the vehicle from
+    behind and from the side, tilted the way it is actually sitting. Both read the same sensor and
+    the same angles; only the drawing differs.</div>
+</div>
+
+<div class="section">Levelling</div>
+<div class="card wide">
+  <div class="label">Levelling thresholds</div>
+  <div class="sub">These are properties of <i>this</i> vehicle, not preferences. A high-top van on
+    soft suspension behaves differently from a low camper, so the angles that matter are set per
+    installation. They drive the vial's scale, its rings and its colours, and the wording on the
+    Level page.</div>
+  <div class="ctl" style="margin-top:14px">
+    <label class="sub" style="margin:0;min-width:150px">Level enough</label>
+    <input id="lvlok" type="number" min="0.1" max="15" step="0.1" style="width:90px">
+    <span class="sub" style="margin:0">degrees &mdash; good enough to sleep on</span>
+  </div>
+  <div class="ctl" style="margin-top:8px">
+    <label class="sub" style="margin:0;min-width:150px">Uncomfortable</label>
+    <input id="lvlwarn" type="number" min="1" max="45" step="0.5" style="width:90px">
+    <span class="sub" style="margin:0">degrees &mdash; warning; unpleasant to live in</span>
+  </div>
+  <div class="ctl" style="margin-top:8px">
+    <label class="sub" style="margin:0;min-width:150px">End of scale</label>
+    <input id="lvlmax" type="number" min="2" max="60" step="0.5" style="width:90px">
+    <span class="sub" style="margin:0">degrees &mdash; set near where the vehicle would tip</span>
+  </div>
+  <div class="label" style="margin-top:18px">Sensor orientation</div>
+  <div class="sub">Which way the sensor is fitted. Tilt the van (or the sensor) and flip whichever
+    of these reads backwards &mdash; that is quicker and more reliable than working it out from how
+    the board is mounted. These act at the sensor, so the spirit level, the van drawings, the
+    wording and the display all follow together and cannot disagree.
+    The stored zero is kept in the sensor's own axes, so it survives a change here &mdash;
+    there is no need to calibrate again afterwards.</div>
+  <div class="ctl" style="margin-top:10px">
+    <button class="btn" id="orroll">Side to side</button>
+    <button class="btn" id="orpitch">Front to back</button>
+    <button class="btn" id="orswap">Axes</button>
+  </div>
+  <div class="sub" id="ornote" style="margin-top:6px"></div>
+  <div class="sub" id="orlive" style="margin-top:6px">&nbsp;</div>
+
+  <div class="ctl" style="margin-top:18px">
+    <label class="sub" style="margin:0;min-width:150px">Refresh</label>
+    <input id="lvlms" type="number" min="200" max="10000" step="50" style="width:90px">
+    <span class="sub" style="margin:0">ms &mdash; how often the bubble updates</span>
+  </div>
+  <div class="sub" style="margin-top:6px">The Level page polls a small dedicated endpoint, not the
+    whole dashboard, so refreshing quickly is cheap on the network. The floor is 200&nbsp;ms because
+    each measurement averages 16 samples and takes about 80&nbsp;ms of the hub's time; asking much
+    faster would spend most of it measuring tilt instead of reading the battery and charger.</div>
+
+  <div class="label" style="margin-top:18px">Calibration</div>
+  <div class="sub">Park on ground you know to be flat, let the van settle, then set the zero. The
+    sensor is never mounted perfectly square, so this is what makes the readings mean anything. It
+    is stored on the hub. If the sensor is ever moved, calibrate again.</div>
+  <div class="ctl" style="margin-top:10px">
+    <button class="btn on" id="lvcal">Set level here</button>
+    <button class="btn" id="lvclear">Clear calibration</button>
+    <span class="sub" id="lvcalres" style="margin:0"></span>
+  </div>
+
+  <div class="label" style="margin-top:18px">Drift log</div>
+  <div class="sub">A diagnostic, not something to leave running. It records the tilt and the
+    sensor's temperature every few minutes, but only while the van is parked and still, so you can
+    see whether the level wanders as the day warms up. The sensor's zero moves by about 0.06&deg;
+    per &deg;C (measured on this van: docs/level_drift), which over a cold night and a sunny
+    afternoon can come to a degree or more, and no calibration can remove it. Switch it on for a day or two, download the file, then switch it
+    off again &mdash; it writes to the hub's flash while it runs.</div>
+  <div class="ctl" style="margin-top:10px">
+    <button class="btn" id="lvllog">Log off</button>
+    <a class="btn" id="lvllogdl" href="/api/level/log" download>Download</a>
+    <button class="btn" id="lvllogclr">Clear log</button>
+  </div>
+  <div class="sub" id="lvllogstat" style="margin-top:6px">&nbsp;</div>
+  <div class="sub" style="margin-top:10px">The <b>last 15 minutes of driving</b>, for the G-force view: the hub
+    keeps every reading (about three a second) in memory, even out of Wi-Fi range, so a drive can be looked at
+    afterwards. Download it soon after - it is not kept over a restart.</div>
+  <div class="ctl" style="margin-top:6px">
+    <a class="btn" href="/api/level/trip" download="trip.csv">Download the last 15 minutes</a>
+  </div>
+  <div class="sub" style="margin-top:10px">The vial's scale is deliberately <b>not linear</b>. A rim
+    at 30&deg; would put one degree about 4&nbsp;pixels from the centre, so the bubble would barely
+    move while you were levelling. The radius follows the square root of the angle instead, which
+    puts one degree roughly six times further out while the rim still reaches the limit above. Each
+    ring is labelled with its angle, because a non-linear scale cannot be read by eye otherwise.</div>
+</div>
+
+<div class="section">GPS</div>
+<div class="card wide">
+  <div class="label">External receiver</div>
+  <div class="sub">A u-blox NEO-7M (or any NMEA receiver) on a UART, which is how the van knows
+    where it is. The browser cannot help here: its location service needs a secure origin, and this
+    hub is served over plain http, so the Outside page has no position of its own without one.
+    Switch this off and nothing is opened &mdash; an unwired receiver should not look like a fault.</div>
+  <div class="ctl" style="margin-top:12px">
+    <button class="btn" id="gpson">GPS off</button>
+    <span class="sub" id="gpsstat" style="margin:0"></span>
+  </div>
+
+  <div class="label" style="margin-top:18px">Wiring</div>
+  <div class="sub">Four wires. Only the receiver's TX matters for reading position &mdash; the hub's
+    TX is wired for configuring the receiver later and can be left off.</div>
+  <div style="overflow-x:auto;margin-top:8px">
+  <table class="gpspins">
+    <tr><th>Receiver</th><th>Hub</th><th>Why</th></tr>
+    <tr><td>VCC</td><td>3V3</td><td>the NEO-7M runs at 3.3&nbsp;V</td></tr>
+    <tr><td>GND</td><td>GND</td><td>any ground will do</td></tr>
+    <tr><td><b>TX</b></td><td><b id="gpsrxgp">GPIO1</b> &rarr; hub RX</td>
+        <td>carries the position &mdash; the one that matters</td></tr>
+    <tr><td>RX</td><td id="gpstxgp">GPIO0</td>
+        <td>only for sending settings to the receiver</td></tr>
+  </table>
+  </div>
+  <div class="sub" id="gpscfg" style="margin-top:8px"></div>
+  <div class="sub" style="margin-top:6px">The pins live in <code>config.py</code> rather than here:
+    a wrong pin is a receiver that never answers with nothing on screen to say why, so changing them
+    is a deliberate act. The values above are read from the hub, so they are what it is actually
+    using. The pins must belong to the UART chosen there. On the Waveshare relay board the GPS
+    uses UART0 on GPIO0/GPIO1, because UART1 is the board's RS485 port (GPIO24/25); where the pins
+    are is on the board's silkscreen and in docs/HARDWARE.md.</div>
+</div>
+
+<div class="section">Security</div>
+<div class="card wide">
+  <div class="label">Hub password</div>
+  <div class="sub" id="pwstat"></div>
+  <div class="ctl" style="margin-top:10px">
+    <label>New password <input id="pw1" type="password" style="width:170px" autocomplete="new-password"></label>
+    <label>Again <input id="pw2" type="password" style="width:170px" autocomplete="new-password"></label>
+    <button class="btn" id="pwset">Set password</button>
+  </div>
+  <div class="ctl" style="margin-top:8px">
+    <button class="btn" id="pwweb">Password required</button>
+    <button class="btn" id="pwclear">Remove password</button>
+    <button class="btn" id="pwout">Forget it on this device</button>
+  </div>
+  <div class="sub" style="margin-top:6px">With a password set, changing settings, the heater, frost
+    protection, timers, storage mode, guard, the battery's switches and restarting the hub all ask for
+    it &mdash; once per phone or browser, which remembers a key worked out from it, never the password.
+    Anyone on the van's WiFi can still see everything, set the lights and use panic.
+    <b>Password required</b> off leaves the hub open again without forgetting the password. Forgotten
+    it? A factory reset (below) clears it, or it can be cleared over USB from a computer.</div>
+
+  <div class="label" style="margin-top:18px">Factory reset</div>
+  <div class="sub" style="margin-top:4px">Starting again from scratch, when the password is forgotten
+    or before passing the van on. No password is needed: having a hand on the board is the permission,
+    as with a router's reset button.
+    <ul style="margin:6px 0 0;padding-left:20px">
+      <li><b>The hub:</b> with it running, hold the <b>BOOT</b> button on the board for
+        <b>10 seconds</b>. From 2 seconds its light flashes red and it beeps each second; at 10 it
+        gives one long beep, clears everything and restarts. Let go before then to cancel.</li>
+      <li><b>The van display:</b> with it running, hold the <b>BOOT</b> button on the back for
+        <b>10 seconds</b>. A short press still turns the screen off and on; held, it counts down on
+        the screen from 8. Let go before the end to cancel.</li>
+      <li><b>Not while switching on.</b> Held while the power is connected, BOOT puts either board
+        into its firmware-loading mode instead: nothing is lost, it just waits. Disconnect and
+        reconnect the power to carry on.</li>
+    </ul></div>
+  <div class="sub" style="margin-top:6px"><b>The hub forgets:</b> every setting on these pages
+    (networks, Bluetooth devices and the Victron key, location, alerts, switch names, the checklist),
+    the password and the display's pairing, the levelling calibration, the relays, timers,
+    guard, frost protection and storage mode, and its logs. It keeps its software and
+    <code>config.py</code>, and comes back with the values set there when it was installed, including
+    the hotspot's name and password: to hand on a truly blank hub, replace <code>config.py</code> over
+    USB too.<br>
+    <b>The display forgets:</b> its pairing with the hub, the networks it learned from the hub, its
+    brightness and sound settings and the game scores, so it shows a code to pair again. It keeps its
+    software, its update key and its touch calibration.</div>
+
+  <div class="label" style="margin-top:18px;color:var(--amber)">Never expose the hub to the internet</div>
+  <div class="sub" style="margin-top:4px">Do not port-forward the hub on a router, or put it behind a
+    tunnel or reverse proxy that makes it reachable from outside. It is built for the van's own WiFi only:
+    <ul style="margin:6px 0 0;padding-left:20px">
+      <li>No encryption (plain HTTP, no HTTPS): the password key, settings and readings cross the network as readable text.</li>
+      <li>Anyone who can reach it can read everything, set the lights and set off the panic alarm &mdash; even with a password set.</li>
+      <li>It controls real equipment: the heater, the relays, and the battery switches that can cut the van's 12&nbsp;V.</li>
+      <li>It is a small microcontroller: a burst of requests from an internet scanner can stall it.</li>
+    </ul>
+    <div style="margin-top:6px">To see or control the van from away, use
+    a system that reads the hub on the local network and is secured itself, such as Home Assistant.</div></div>
+
+  <div class="label" style="margin-top:18px">Van display</div>
+  <div class="sub">The display pairs instead of typing a password: when it needs to, it shows a
+    6-digit code. Enter the code here within three minutes.</div>
+  <div class="ctl" style="margin-top:10px">
+    <label>Code on the display <input id="paircode" inputmode="numeric" maxlength="6" style="width:110px"></label>
+    <button class="btn" id="pairgo">Pair</button>
+    <span class="sub" id="pairstat" style="margin:0"></span>
+  </div>
+  <div class="sub" id="pairdevs" style="margin-top:6px"></div>
+</div>
+
+<div class="card wide" id="savecard">
+  <div class="ctl">
+    <button class="btn on" id="save">Save settings</button>
+    <button class="btn" id="reboot">Restart hub</button>
+    <span class="sub" id="saveres" style="margin:0"></span>
+  </div>
+  <div class="sub" id="restartnote"></div>
+</div>
+
+</div>
+<footer class="sub" style="text-align:center;margin:14px auto 4px">
+  <span id="foot">IntrepidVan hub</span>
+</footer>
+
+<script src="/common.js"></script>
+<script>
+// The van display's software: what it runs, what the hub has for it
+(function(){
+  const ago = s => s == null ? 'not yet' : s < 90 ? 'just now' : s < 5400 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago';
+  async function show(){
+    try{
+      const d = await (await fetch('/api/data', {cache: 'no-store'})).json(), f = d.display_fw || {};
+      const el = document.getElementById('dfw'); if(!el) return;
+      el.textContent = 'On the display: ' + (f.has || 'unknown') + ' · on the hub: ' + (f.hub || 'none yet') +
+        ' · display last asked ' + ago(f.seen_s) +
+        (f.hub && f.has && f.hub !== f.has ? ' — an update is waiting' : '');
+    }catch(e){}
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    const b = document.getElementById('dfwgo');
+    if(b) b.onclick = async function(){
+      const r = document.getElementById('dfwres');
+      try{
+        await fetch('/api/display', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                     body: JSON.stringify({ota_req: Math.floor(Date.now() / 1000)})});
+        r.textContent = 'Asked - the display looks within a few seconds and changes over when it is not in use.';
+        setTimeout(show, 8000);
+      }catch(e){ r.textContent = 'Not sent: ' + e.message; }
+    };
+    show(); setInterval(show, 20000);
+  });
+})();
+</script>
+<script>
+// The Android app, if this hub carries it (not on the Pico W: no room)
+fetch('/apk.json', {cache: 'no-store'}).then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(a){ if(!a) return;
+    document.getElementById('apklink').textContent = 'Download the Android app (version ' + a.version +
+      ', ' + (a.size / 1048576).toFixed(1) + ' MB)';
+    document.getElementById('apkbox').style.display = ''; }).catch(function(){});
+</script>
+<svg width="0" height="0" style="position:absolute">
+  <!-- the switch icons, copied from app.html (keep them in step): the
+       choices below. The hub checks the names against settings.SWITCH_ICONS. -->
+  <symbol id="i-bulb" viewBox="0 0 18 18"><circle cx="9" cy="7.5" r="5.7"/><path d="M6.8 13.3 7 14.5M11.2 13.3 11 14.5M7 15h4M7.5 17h3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 18 18"><circle cx="9" cy="9" r="3.4" fill="currentColor" stroke="none"/><path d="M9 1.2v2M9 14.8v2M1.2 9h2M14.8 9h2M3.5 3.5l1.4 1.4M13.1 13.1l1.4 1.4M3.5 14.5l1.4-1.4M13.1 4.9l1.4-1.4" stroke-width="1.6"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 18 18"><path d="M9 1.5s5.5 5.6 5.5 9.6a5.5 5.5 0 0 1-11 0C3.5 7.1 9 1.5 9 1.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 18 18"><path d="M9 1v16M2.1 5l13.8 8M2.1 13 15.9 5"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 18 18"><path d="M9 17c-3.4 0-5.4-2.6-5-5.6.4-2.7 2.4-3.6 3.2-6.4 1.5 1.3 2.2 2.8 2.4 4.2.8-1.3 1.1-3.3.9-7.6 3.2 2.3 4.5 6 4.2 9.6C14.4 14.8 12.4 17 9 17z"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.9"/><path d="M9 9V3.7M9 9l4.6 2.65M9 9l-4.6 2.65" stroke-width="3.2"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 18 18"><path d="M11 1 4.5 10l8-1-6 8.5"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 18 18"><path d="M6.5 1v4M11.5 1v4M3.5 5h11v4a5.5 5.5 0 0 1-11 0zM9 14.5v3"/></symbol>
+  <symbol id="i-power" viewBox="0 0 18 18"><path d="M5 5.3a6.8 6.8 0 1 0 8 0M9 1.5v7"/></symbol>
+  <symbol id="i-usb" viewBox="0 0 18 18"><path d="M9 3v11.5M9 11 5 8.5V6.6M9 9l4-2.5V4.9"/><path d="M9 .5l2.4 3.5H6.6z" fill="currentColor" stroke="none"/><circle cx="5" cy="5.4" r="1.6" fill="currentColor" stroke="none"/><rect x="11.7" y="2.4" width="2.6" height="2.6" rx=".5" fill="currentColor" stroke="none"/><circle cx="9" cy="15.4" r="2.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 18 18"><rect x="1" y="5" width="14" height="9" rx="1.5"/><path d="M17 8v3" stroke-width="2.4"/><rect x="3.5" y="7.5" width="7" height="4" rx="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 18 18"><rect x="1" y="2.5" width="16" height="11" rx="1.5"/><path d="M9 13.5v3M5.5 16.5h7"/></symbol>
+  <symbol id="i-music" viewBox="0 0 18 18"><path d="M6.5 14V4L15 2v10"/><circle cx="4.6" cy="14.2" r="2.3" fill="currentColor" stroke="none"/><circle cx="13.1" cy="12.2" r="2.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 18 18"><path d="M3 6h10l-1 9.5H4zM13.3 7.9a2.4 2.4 0 0 1 0 5"/><path d="M6 1.5v2.3M9.5 1.5v2.3" stroke-width="1.6"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 18 18"><path d="M2.3 7.4a9.5 9.5 0 0 1 13.4 0M4.9 10.4a5.8 5.8 0 0 1 8.2 0"/><circle cx="9" cy="14.3" r="1.7" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-home" viewBox="0 0 18 18"><path d="M1 9 9 2l8 7M3 8v9h12V8M7 17v-5h4v5"/></symbol>
+  <symbol id="i-engine" viewBox="0 0 18 18"><circle cx="5" cy="11" r="3.5"/><rect x="8.5" y="4" width="8.5" height="13" rx="1"/><path d="M11.3 7v7M14.2 7v7" stroke-width="1.5"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 18 18"><path d="M4 16v-5a5 5 0 0 1 10 0v5M2.5 16h13M9 1v2M2.5 3.5 4 5M15.5 3.5 14 5"/></symbol>
+  <symbol id="i-switch" viewBox="0 0 18 18"><rect x="1" y="4.5" width="16" height="9" rx="4.5"/><circle cx="12.5" cy="9" r="2.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.8"/><path d="M9 9V4.5M9 9l3 1.5"/></symbol>
+</svg>
+<script>
+const $=id=>document.getElementById(id);
+let S=null, devs=[], mode='sta', nets=[], apAlways=true;
+let wxMode='auto', locFrom='';     // the forecast's source, and how the fixed location was filled in
+let alertDefs=[], alertsOff=[], alertSound=true;
+const SLOTS=[['bms','Battery (BMS)'],['renogy','DC-DC charger'],['victron','Mains charger'],['heater','Heater']];
+const KIND={bms:'battery',renogy:'DC-DC',victron:'mains charger',heater:'heater'};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function setLink(cls,text){ $('linkst').className=cls; $('linktext').textContent=text; }
+function setNet(cls,text){ $('netst').className=cls; $('nettext').textContent=text; }
+
+function paintAlerts(){
+  $('alertlist').innerHTML = alertDefs.length ? alertDefs.map(function(a){
+    var on = alertsOff.indexOf(a.id) < 0;
+    return '<div style="border-top:1px solid var(--line);padding:12px 0">'
+      + '<div class="ctl" style="margin:0 0 6px">'
+      + '<button class="btn alert-t ' + (on ? 'on' : 'off') + '" data-id="' + esc(a.id) + '">'
+      + (on ? 'On' : 'Off') + '</button>'
+      + '<b style="font-size:14px">' + esc(a.name) + '</b></div>'
+      + '<div class="sub" style="margin:0">' + esc(a.why) + '</div>'
+      + (a.limits ? '<div class="sub" style="margin-top:4px;opacity:.85">' + esc(a.limits) + '</div>' : '')
+      + '</div>';
+  }).join('') : '<div class="sub">No alerts reported by the hub.</div>';
+  [].forEach.call($('alertlist').querySelectorAll('.alert-t'), function(b){
+    b.onclick = function(){
+      var id = b.dataset.id, i = alertsOff.indexOf(id);
+      if(i < 0) alertsOff.push(id); else alertsOff.splice(i, 1);
+      paintAlerts();
+    };
+  });
+}
+
+// Panic: held for a second, like the van display's Panic button
+(function(){
+  const b = $('sosbtn');
+  let t0 = 0, raf = 0;
+  function tick(){
+    const p = Math.min(1, (Date.now() - t0) / 1000);
+    b.style.setProperty('--p', (p * 100) + '%');
+    if(p >= 1){ stop(); fire(); } else raf = requestAnimationFrame(tick);
+  }
+  function stop(){ cancelAnimationFrame(raf); t0 = 0; b.style.setProperty('--p', '0%'); }
+  async function fire(){
+    try{
+      const r = await (await fetch('/api/panic', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({on:true, by:'a phone'})})).json();
+      $('sosnote').textContent = r.panic ? 'Panic set off.' : 'The hub did not set it off.';
+      if(window.showAlerts) showAlerts(r.alerts);
+    }catch(e){ $('sosnote').textContent = 'Could not reach the hub.'; }
+  }
+  b.addEventListener('pointerdown', e => { e.preventDefault(); t0 = Date.now(); tick(); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+})();
+
+$('alerttest').onclick = async function(){
+  $('alerttest').disabled = true;
+  try{
+    const r = await (await fetch('/api/alerts/test', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}'})).json();
+    $('alerttestnote').textContent = r.ok ? 'Test alarm raised - it clears itself within a minute.'
+                                          : 'The hub did not raise it.';
+    if(window.showAlerts) showAlerts(r.alerts);
+  }catch(e){ $('alerttestnote').textContent = 'Could not reach the hub.'; }
+  setTimeout(function(){ $('alerttest').disabled = false; }, 3000);
+};
+
+function paintVol(){
+  const c = +$('clickvol').value, a = +$('alarmvol').value;
+  $('clickvolv').textContent = c ? c + '%' : 'Off';
+  $('alarmvolv').textContent = a + '%';
+}
+$('clickvol').oninput = paintVol;
+$('alarmvol').oninput = paintVol;
+
+function paintAlertSound(){
+  var b = $('alertsound');
+  b.className = 'btn ' + (alertSound ? 'on' : 'off');
+  b.textContent = alertSound ? 'Sound on' : 'Sound off';
+  $('alertsoundnote').textContent = alertSound
+    ? 'Warnings beep as well as showing on screen.'
+    : 'Warnings show on screen only, with no sound.';
+}
+
+function paintNets(){
+  $('netlist').innerHTML = nets.length ? nets.map(function(n,i){
+    var on = n.on !== false;
+    return '<div class="ctl'+(on?'':' n-off')+'" data-i="'+i+'">'
+    + '<span class="sub" style="margin:0;width:14px">'+(i+1)+'</span>'
+    + '<label class="tgl" title="'+(on?'Joined when in range - tap to stop joining it':'Not joined - tap to join it again')+'">'
+    + '<input type="checkbox" class="n-on" aria-label="Join '+esc(n.ssid||'this network')+'"'+(on?' checked':'')+'><span></span></label>'
+    + '<input class="n-ssid" value="'+esc(n.ssid)+'" placeholder="network name" style="width:165px" autocomplete="off">'
+    // what was typed survives a redraw (a switch, a move or a removal)
+    + '<input class="n-pass" type="password" value="'+esc(n.password||'')+'" placeholder="'+(n.password_set?'unchanged':'password')+'" style="width:145px" autocomplete="new-password">'
+    + '<button class="btn n-up" type="button"'+(i?'':' disabled')+'>&uarr;</button>'
+    + '<button class="btn n-del" type="button">Remove</button></div>'; }).join('')
+    : '<div class="sub">No networks saved &mdash; the hub stays on its own hotspot.</div>';
+  if(nets.length && nets.every(function(n){ return n.on === false; }))
+    $('netlist').insertAdjacentHTML('beforeend',
+      '<div class="sub">Every network is switched off &mdash; the hub stays on its own hotspot.</div>');
+  [].forEach.call($('netlist').querySelectorAll('.n-on'), function(c){
+    c.onchange = function(){ readNets(); paintNets(); }; });
+  [].forEach.call($('netlist').querySelectorAll('.n-del'), function(b){
+    b.onclick = function(e){ var i=+e.target.closest('.ctl').dataset.i;
+      readNets(); nets.splice(i,1); paintNets(); }; });
+  [].forEach.call($('netlist').querySelectorAll('.n-up'), function(b){
+    b.onclick = function(e){ var i=+e.target.closest('.ctl').dataset.i; readNets();
+      if(i>0){ var t=nets[i-1]; nets[i-1]=nets[i]; nets[i]=t; } paintNets(); }; });
+}
+
+// capture whatever is typed before redrawing, so edits are never lost
+function readNets(){
+  var rows=[].slice.call($('netlist').querySelectorAll('.ctl[data-i]'));
+  if(!rows.length) return;
+  nets = rows.map(function(r,i){
+    return {ssid:r.querySelector('.n-ssid').value.trim(),
+            // one shown from the hub is not the user's typing: not kept
+            password:r.querySelector('.n-pass').dataset.revealed ? '' : r.querySelector('.n-pass').value,
+            on:r.querySelector('.n-on').checked,
+            password_set: nets[i] ? nets[i].password_set : false};
+  }).filter(function(n){ return n.ssid; });
+}
+
+function paintApAlways(){
+  var b=$('apalways');
+  b.className='btn '+(apAlways?'on':'');
+  b.textContent = apAlways ? 'Hotspot always on' : 'Hotspot as fallback only';
+  $('apalwaysnote').textContent = apAlways
+    ? 'Always reachable at the hotspot address, whatever else it joins.'
+    : 'The hotspot starts only when no known network can be joined.';
+}
+
+function paintMode(){
+  [...document.querySelectorAll('#modebtns .btn')].forEach(b=>
+    b.classList.toggle('on', b.dataset.mode===mode));
+  $('stabox').style.display = mode==='sta' ? '' : 'none';
+  $('modehelp').textContent = mode==='sta'
+    ? 'The hub joins your network and is reachable at its address on that network.'
+    : 'The hub makes its own hotspot. Use this in the van with no other network around.';
+}
+
+function paintAssign(){
+  const opts = a => {
+    let h = '<option value="">- not set -</option>';
+    if(a && !devs.some(d=>d.addr===a)) h += '<option value="'+esc(a)+'" selected>'+esc(a)+' (saved)</option>';
+    devs.forEach(d=>{
+      const lbl = (d.name||'(no name)') + ' - ' + d.addr + ' - ' + d.rssi + ' dBm';
+      h += '<option value="'+esc(d.addr)+'"'+(d.addr===a?' selected':'')+'>'+esc(lbl)+'</option>';
+    });
+    return h;
+  };
+  $('assign').innerHTML = SLOTS.map(([k,label])=>
+    '<div class="ctl"><label style="width:150px">'+label+'</label>'+
+    '<select id="sel-'+k+'" style="flex:1;min-width:220px;background:var(--panel2);color:var(--txt);'+
+    'border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px">'+opts(S.devices[k])+'</select></div>'
+  ).join('');
+}
+
+async function load(){
+  try{
+    const r = await (await fetch('/api/settings')).json();
+    if(!r.ok) throw new Error(r.error||'failed');
+    S = r.settings;
+    mode = S.wifi.mode;
+    $('apssid').value = S.wifi.ap_ssid || '';
+    $('appass').placeholder = S.wifi.ap_password_set ? 'unchanged' : 'not set';
+    $('vkey').placeholder = S.devices.victron_key_set ? 'unchanged' : '32 hex characters';
+    $('vkeystat').textContent = S.devices.victron_key_set ? 'Key stored' : 'No key yet';
+    $('lat').value = (S.location&&S.location.lat) || '';
+    $('lon').value = (S.location&&S.location.lon) || '';
+    $('place').value = (S.location&&S.location.name) || '';
+    wxMode = (S.location && S.location.source) === 'fixed' ? 'fixed' : 'auto';
+    locFrom = (S.location && S.location.from) || '';
+    paintWxMode();
+    paintAuth();
+    if(!(S.auth || {}).set) firstRun();
+    nets = (S.wifi.networks||[]).map(function(n){
+      return {ssid:n.ssid, password:'', password_set:n.password_set, on:n.on !== false}; });
+    apAlways = S.wifi.ap_always !== false;
+    $('jointo').value = S.wifi.join_timeout_s || 15;
+    $('retrys').value = S.wifi.retry_s || 300;
+    $('checklist').value = (S.checklist || []).join('\n');
+    const SWDEF = ['Water pump', 'Fridge', 'Garage light', 'Inverter', 'Lights', 'USB'];
+    const SWICON = ['drop', 'snow', 'home', 'bolt', 'bulb', 'power'];   // settings.DEFAULT_SWITCH_ICONS
+    const SWICONS = [['bulb', 'Light bulb'], ['sun', 'Outside light'], ['drop', 'Water'], ['snow', 'Fridge / cold'], ['flame', 'Heater'], ['fan', 'Fan'], ['bolt', 'Power / inverter'], ['plug', 'Socket'], ['power', 'On / off'], ['usb', 'USB charging'], ['battery', 'Battery'], ['tv', 'TV'], ['music', 'Music'], ['cup', 'Kettle / coffee'], ['wifi', 'Wi-Fi / router'], ['home', 'Home'], ['engine', 'Engine'], ['siren', 'Alarm / siren'], ['switch', 'Switch'], ['clock', 'Timer']];
+    $('swnames').innerHTML = SWDEF.map(function(d, i){
+      return '<label style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="sub" style="margin:0">Relay ' + (i + 1) + '</span>' +
+        '<input maxlength="14" data-swn="' + i + '" placeholder="' + d + '" style="min-width:0">' +
+        '<span style="display:flex;align-items:center;gap:6px;min-width:0">' +
+        '<svg class="swico" viewBox="0 0 18 18"><use href="#i-' + SWICON[i] + '"/></svg>' +
+        '<select data-swi="' + i + '" style="flex:1;min-width:0">' +
+        SWICONS.map(function(c){ return '<option value="' + c[0] + '">' + c[1] + '</option>'; }).join('') +
+        '</select></span></label>'; }).join('');
+    document.querySelectorAll('[data-swi]').forEach(function(e){
+      const i = +e.dataset.swi, v = (S.switch_icons || [])[i];
+      e.value = SWICONS.some(function(c){ return c[0] === v; }) ? v : SWICON[i];
+      e.onchange = function(){ e.parentNode.querySelector('use').setAttribute('href', '#i-' + e.value); };
+      e.onchange(); });
+    document.querySelectorAll('[data-swn]').forEach(function(e){
+      const v = (S.switches || [])[+e.dataset.swn]; e.value = v && v !== e.placeholder ? v : ''; });
+    const pn = S.panel || {click_volume: 100, alarm_volume: 100};
+    $('clickvol').value = pn.click_volume; $('alarmvol').value = pn.alarm_volume;
+    paintVol();
+    alertDefs = r.alert_defs || [];
+    alertsOff = (S.alerts && S.alerts.off) ? S.alerts.off.slice() : [];
+    alertSound = !(S.alerts && S.alerts.sound === false);
+    $('lowsoc').value = (S.alerts && S.alerts.low_soc) || 20;
+    paintMode(); paintAssign(); paintNets(); paintApAlways();
+    paintAlerts(); paintAlertSound();
+    if(S.display) disp = {on:S.display.on !== false, invert:!!S.display.invert,
+      rotate:!!S.display.rotate, brightness:S.display.brightness || 255,
+      refresh_ms:S.display.refresh_ms || 2000};
+    views = {overview: (S.display && S.display.overview) || 'auto',
+             level: (S.display && S.display.level) || 'bubble'};
+    lvl = {ok: (S.display && S.display.level_ok) || 1.0,
+           warn: (S.display && S.display.level_warn) || 20.0,
+           max: (S.display && S.display.level_max) || 30.0,
+           ms: (S.display && S.display.level_refresh_ms) || 500};
+    orient = {swap: !!(S.display && S.display.level_swap_xy),
+              roll: !!(S.display && S.display.level_invert_roll),
+              pitch: !!(S.display && S.display.level_invert_pitch)};
+    gpsOn = !!(S.display && S.display.gps_enabled);
+    paintGps();
+    lvlLog = !!(S.display && S.display.level_log);
+    paintLvlLog();
+    paintOrient();
+    paintLvl();
+    paintViews();
+    paintDisp();
+    setLink('ok','Settings loaded');
+  }catch(e){
+    // The hub answers one request at a time and, with several large ones at
+    // once as this page opens, can run short of memory: try again shortly.
+    load.tries = (load.tries || 0) + 1;
+    if(load.tries < 4){ setLink('busy','Loading settings…'); setTimeout(load, 1500); }
+    else setLink('','Could not load settings');
+  }
+}
+
+async function netInfo(){
+  try{
+    const d = await (await fetch('/api/data')).json();
+    const st = d.stats||{};
+    if(st.wifi_fallback) setNet('warn','Wi-Fi join failed - running on the hotspot');
+    else if(st.wifi_mode==='ap') setNet('ok','Hotspot mode');
+    else setNet('ok','Joined ' + (st.wifi_ssid || 'network')
+                + (st.wifi_ap_on ? ' \u00b7 hotspot also on' : ''));
+    if(st.wifi_ap_clash){
+      setNet('warn','Address clash \u2014 the hotspot shares a range with the joined network');
+    }
+    $('apipnote').textContent = st.wifi_ap_ip
+      ? ('Reachable at http://' + st.wifi_ap_ip + '/'
+         + (st.wifi_ap_clash ? ' \u2014 clashes with the joined network, change it' : ''))
+      : 'Hotspot not running.';
+    $('foot').textContent = 'Uptime ' + Math.round((st.uptime_s||0)/60) + ' min - free memory '
+      + (st.mem_free!=null ? Math.round(st.mem_free/1024)+' KB' : '-');
+  }catch(e){}
+}
+
+$('blescan').onclick = async ()=>{
+  $('blescan').disabled=true; $('blestat').textContent='Scanning for about 8 seconds...';
+  try{
+    const r = await (await fetch('/api/scan/ble',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ms:8000})})).json();
+    if(!r.ok) throw new Error(r.error||'scan failed');
+    devs = r.devices||[];
+    $('blestat').textContent = devs.length + ' device' + (devs.length===1?'':'s') + ' found';
+    $('bledevs').innerHTML = devs.map(d=>{
+      const g = d.guess ? ' - looks like the ' + KIND[d.guess] : '';
+      return '<span class="chip'+(d.guess?' on':'')+'">'+esc(d.name||'(no name)')+' - '+d.rssi+' dBm'+g+'</span>';
+    }).join('');
+    devs.forEach(d=>{ if(d.guess && !S.devices[d.guess]) S.devices[d.guess]=d.addr; });
+    paintAssign();
+  }catch(e){ $('blestat').textContent = 'Scan failed: ' + e.message; }
+  $('blescan').disabled=false;
+};
+
+$('wifiscan').onclick = async ()=>{
+  $('wifiscan').disabled=true; $('wifistat').textContent='Scanning...';
+  try{
+    const r = await (await fetch('/api/scan/wifi',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+    if(!r.ok) throw new Error(r.error||'scan failed');
+    // not "nets": that is the list of networks to join, which a tap below adds to
+    const found = r.networks||[];
+    $('wifistat').textContent = found.length + ' network' + (found.length===1?'':'s') + ' found - tap one to add it';
+    $('wifinets').innerHTML = found.map(n=>
+      '<span class="chip" data-ssid="'+esc(n.ssid)+'" style="cursor:pointer">'+esc(n.ssid)+' - '+n.rssi+' dBm'+(n.secure?'':' - open')+'</span>').join('');
+    [...$('wifinets').querySelectorAll('.chip')].forEach(c=>c.onclick=()=>{
+      readNets();
+      let i = nets.findIndex(function(n){ return n.ssid===c.dataset.ssid; });
+      if(i < 0){
+        nets.push({ssid:c.dataset.ssid, password:'', password_set:false, on:true});
+        i = nets.length - 1;
+        paintNets();
+      }
+      c.classList.add('on');
+      // straight to its password
+      const row = $('netlist').querySelector('.ctl[data-i="'+i+'"]');
+      if(row){ const p = row.querySelector('.n-pass'); p.focus(); p.scrollIntoView({block:'center'}); }
+      $('wifistat').textContent = 'Added ' + c.dataset.ssid + ' - type its password, then Save.';
+    });
+  }catch(e){ $('wifistat').textContent = 'Scan failed: ' + e.message; }
+  $('wifiscan').disabled=false;
+};
+
+[...document.querySelectorAll('#modebtns .btn')].forEach(b=>b.onclick=()=>{
+  mode=b.dataset.mode; paintMode();
+});
+$('netadd').onclick = function(){ readNets();
+  nets.push({ssid:'',password:'',password_set:false,on:true}); paintNets();
+  const rows = $('netlist').querySelectorAll('.n-ssid'); if(rows.length) rows[rows.length-1].focus(); };
+$('apalways').onclick = function(){ apAlways=!apAlways; paintApAlways(); };
+$('alertsound').onclick = function(){ alertSound=!alertSound; paintAlertSound(); };
+
+// ---- page layouts --------------------------------------------------------
+let views = {overview: 'auto', level: 'bubble'};
+
+function paintViews(){
+  $('viewoverview').value = views.overview || 'auto';
+  $('viewlevel').value = views.level || 'bubble';
+}
+
+$('viewoverview').onchange = function(e){ views.overview = e.target.value; };
+$('viewlevel').onchange = function(e){ views.level = e.target.value; };
+
+let lvl = {ok: 1.0, warn: 20.0, max: 30.0, ms: 500};
+
+// ---- sensor orientation --------------------------------------------------
+let orient = {swap: false, roll: false, pitch: false};
+
+function paintOrient(){
+  const set = function(id, on, a, b){
+    const el = $(id);
+    el.textContent = on ? a : b;
+    el.className = 'btn' + (on ? ' on' : '');
+  };
+  set('orroll',  orient.roll,  'Left ↔ right swapped', 'Left / right normal');
+  set('orpitch', orient.pitch, 'Nose up ↔ down swapped', 'Front / back normal');
+  set('orswap',  orient.swap,  'Axes swapped', 'Axes normal');
+  $('ornote').textContent = (orient.swap || orient.roll || orient.pitch)
+    ? 'Sensor mounting corrected.'
+    : 'Sensor treated as fitted square to the vehicle.';
+}
+
+$('orroll').onclick  = function(){ orient.roll  = !orient.roll;  paintOrient(); };
+
+// ---- levelling drift log ---------------------------------------------------
+// The switch is a setting like any other and is saved with the rest; the row
+// count and temperature come live from /api/level.
+let lvlLog = false;
+
+function paintLvlLog(){
+  const b = $('lvllog');
+  b.textContent = lvlLog ? 'Log on' : 'Log off';
+  b.className = 'btn' + (lvlLog ? ' on' : '');
+}
+$('lvllog').onclick = function(){ lvlLog = !lvlLog; paintLvlLog(); };
+
+async function tickLvlLog(){
+  try{
+    const d = await (await fetch('/api/level')).json();
+    const l = d.level || {};
+    if(!l.present){ $('lvllogstat').textContent = 'No levelling sensor fitted.'; return; }
+    const rows = l.log_rows || 0;
+    $('lvllogstat').textContent = (l.logging ? 'Logging' : 'Not logging') + ' · '
+      + rows + ' row' + (rows === 1 ? '' : 's') + ' stored'
+      + (l.temp_c != null ? ' · sensor ' + l.temp_c.toFixed(1) + '°C' : '')
+      + (l.logging && !l.steady ? ' · waiting for the van to be still' : '');
+    $('lvllogdl').style.opacity = rows ? '' : '0.5';
+    $('lvllogdl').style.pointerEvents = rows ? '' : 'none';
+  }catch(e){}
+}
+
+$('lvllogclr').onclick = async function(){
+  if(!confirm('Delete every row in the drift log?')) return;
+  $('lvllogclr').disabled = true;
+  try{
+    await fetch('/api/level', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'clear_log'})});
+  }catch(e){}
+  $('lvllogclr').disabled = false;
+  tickLvlLog();
+};
+tickLvlLog(); setInterval(tickLvlLog, 10000);
+
+// ---- external GPS --------------------------------------------------------
+let gpsOn = false;
+
+function paintGps(){
+  const b = $('gpson');
+  b.textContent = gpsOn ? 'GPS on' : 'GPS off';
+  b.className = 'btn' + (gpsOn ? ' on' : '');
+}
+
+$('gpson').onclick = function(){ gpsOn = !gpsOn; paintGps(); };
+
+// The live state and the pins the hub is really using, rather than what this
+// page assumes - if someone moves them in config.py the wiring table follows.
+async function tickGps(){
+  try{
+    const d = await (await fetch('/api/data', {cache:'no-store'})).json();
+    const g = d.gps || {};
+    if(g.uart !== undefined){
+      $('gpscfg').textContent = 'Hub is configured for UART' + g.uart
+        + ' at ' + g.baud + ' baud.';
+      $('gpsrxgp').textContent = 'GPIO' + g.rx_pin + ' \u2192 hub RX';
+      $('gpstxgp').textContent = 'GPIO' + g.tx_pin;
+    }
+    $('gpsstat').textContent = !g.configured ? 'Switched off.'
+      : g.error ? ('Could not open the UART: ' + g.error)
+      : g.fix ? ('Fix: ' + g.lat + ', ' + g.lon
+                 + (g.satellites ? ' \u00b7 ' + g.satellites + ' satellites' : ''))
+      : g.sentences ? ('Receiver talking (' + g.sentences + ' sentences) \u2014 no fix yet')
+      : 'Switched on, nothing heard from the receiver yet.';
+  }catch(e){ /* the page still works without this line */ }
+}
+tickGps(); setInterval(tickGps, 5000);
+
+$('orpitch').onclick = function(){ orient.pitch = !orient.pitch; paintOrient(); };
+$('orswap').onclick  = function(){ orient.swap  = !orient.swap;  paintOrient(); };
+
+// A live reading on this card, so the sensor can be set up by tilting the van
+// and watching, without switching back and forth to the Level page. This is the
+// only reliable way to get these right: every attempt to derive them from how
+// the board is mounted has been wrong.
+async function tickOrient(){
+  try{
+    const d = await (await fetch('/api/level', {cache:'no-store'})).json();
+    const l = d.level;
+    if(!l || !l.ok){ $('orlive').textContent = 'Sensor not reading.'; return; }
+    $('orlive').innerHTML = 'Now reading <b>' + l.roll.toFixed(1) + '\u00b0</b> side to side ('
+      + (Math.abs(l.roll) < 0.15 ? 'level' : l.roll > 0 ? 'right side high' : 'left side high')
+      + ') and <b>' + l.pitch.toFixed(1) + '\u00b0</b> front to back ('
+      + (Math.abs(l.pitch) < 0.15 ? 'level' : l.pitch > 0 ? 'nose high' : 'nose low') + ')'
+      + (l.cal_stale ? ' \u2014 calibration out of date' : '');
+  }catch(e){ /* the rest of the page matters more than this line */ }
+}
+tickOrient(); setInterval(tickOrient, 1000);
+
+function paintLvl(){
+  $('lvlok').value = lvl.ok; $('lvlwarn').value = lvl.warn; $('lvlmax').value = lvl.max;
+  $('lvlms').value = lvl.ms;
+}
+
+
+
+document.getElementById('hsaddr').textContent = location.host;
+
+// ---- first run: no password yet ---------------------------------------------
+// A new hub has no password (there is no default: a shared one would be the
+// same on every hub). Until one is set, Settings opens by asking for it. "Not
+// now" puts it off for this visit only.
+function firstRun(){
+  try{ if(sessionStorage.getItem('pwskip')) return; }catch(e){}
+  if($('firstrun')) return;
+  const w = document.createElement('div');
+  w.id = 'firstrun';
+  w.style.cssText = 'position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center';
+  w.innerHTML = '<form class="card" style="width:min(420px,92vw)">' +
+    '<div class="label" style="font-size:15px">Welcome &mdash; set a password for this hub</div>' +
+    '<div class="sub" style="margin-top:6px">Until you do, anyone who joins the van\'s WiFi can change its settings, ' +
+    'the heater and the battery. Each phone or browser asks for it once. You can change it, or switch it off, ' +
+    'under Security.</div>' +
+    '<div class="ctl" style="margin-top:12px"><label style="min-width:80px">Password</label><input id="fr1" type="password" autocomplete="new-password" style="flex:1"></div>' +
+    '<div class="ctl" style="margin-top:6px"><label style="min-width:80px">Again</label><input id="fr2" type="password" autocomplete="new-password" style="flex:1"></div>' +
+    '<div class="sub" id="frmsg" style="margin-top:6px"></div>' +
+    '<div class="ctl" style="margin-top:12px;justify-content:flex-end"><button class="btn" type="button" id="frskip">Not now</button>' +
+    '<button class="btn on" type="submit">Set password</button></div></form>';
+  document.body.appendChild(w);
+  $('frskip').onclick = () => { try{ sessionStorage.setItem('pwskip', '1'); }catch(e){} w.remove(); };
+  w.querySelector('form').onsubmit = async e => {
+    e.preventDefault();
+    const p1 = $('fr1').value, p2 = $('fr2').value;
+    if(p1.length < 4){ $('frmsg').textContent = 'Use at least 4 characters.'; return; }
+    if(p1 !== p2){ $('frmsg').textContent = 'The two passwords are different.'; return; }
+    const k = hubKeyFor(p1);
+    try{
+      const r = await (await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({auth: {set_key: k, web: true}})})).json();
+      if(!r.ok) throw new Error(r.error || 'refused');
+      hubSetKey(k); S = r.settings; paintAuth(); w.remove();
+    }catch(err){ $('frmsg').textContent = 'Not set: ' + err.message; }
+  };
+  $('fr1').focus();
+}
+
+// ---- the hub password and pairing ------------------------------------------
+function paintAuth(){
+  const a = (S && S.auth) || {};
+  $('pwstat').textContent = !a.set ? 'No password - anyone on the van\'s WiFi can change anything.'
+    : a.web ? 'Password set and required.' : 'Password set, but not required at the moment.';
+  $('pwstat').style.color = a.set && a.web ? 'var(--muted)' : 'var(--amber)';
+  $('pwset').textContent = a.set ? 'Change password' : 'Set password';
+  $('pwweb').textContent = a.web === false ? 'Password not required' : 'Password required';
+  $('pwweb').className = 'btn' + (a.web === false ? ' off' : ' on');
+  $('pwweb').style.display = $('pwclear').style.display = a.set ? '' : 'none';
+  const dv = a.devices || [];
+  $('pairdevs').innerHTML = dv.length ? 'Paired: ' + dv.map(n => esc(n) +
+    ' <a href="#" data-unpair="' + esc(n) + '">unpair</a>').join(', ') : 'No display paired.';
+  document.querySelectorAll('[data-unpair]').forEach(e => e.onclick = ev => { ev.preventDefault();
+    if(confirm('Unpair ' + e.dataset.unpair + '? It will show a new code to pair again.')) authPost({unpair: e.dataset.unpair}); });
+}
+async function authPost(part, note){
+  try{
+    const r = await (await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({auth: part})})).json();
+    if(!r.ok) throw new Error(r.error || 'refused');
+    S = r.settings; paintAuth(); if(note) alert(note);
+    return true;
+  }catch(e){ alert('Not changed: ' + e.message); return false; }
+}
+$('pwset').onclick = async function(){
+  const p1 = $('pw1').value, p2 = $('pw2').value;
+  if(p1.length < 4){ alert('Use at least 4 characters.'); return; }
+  if(p1 !== p2){ alert('The two passwords are different.'); return; }
+  const k = hubKeyFor(p1);
+  // sent with the current key (if any); this browser then keeps the new one
+  if(await authPost({set_key: k, web: true})){ hubSetKey(k); $('pw1').value = $('pw2').value = '';
+    alert('Password set. This browser is signed in; others will ask for it once.'); }
+};
+$('pwweb').onclick = () => authPost({web: S.auth.web === false});
+$('pwclear').onclick = () => { if(confirm('Remove the hub password? Anyone on the van\'s WiFi will be able to change anything, and the display will need pairing again if you set a new one.')) authPost({clear: true}); };
+$('pwout').onclick = () => { hubSetKey(''); alert('Forgotten on this device. The next change will ask for the password.'); };
+$('pairgo').onclick = async function(){
+  const code = $('paircode').value.trim();
+  if(!/^\d{6}$/.test(code)){ $('pairstat').textContent = 'The code is 6 digits.'; return; }
+  try{
+    const r = await (await fetch('/api/pair/code', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code: code})})).json();
+    if(!r.ok) throw new Error(r.error || 'refused');
+    $('pairstat').textContent = 'Sent - the display pairs within a few seconds.'; $('paircode').value = '';
+    setTimeout(async () => { try{ const s = await (await fetch('/api/settings')).json(); if(s.ok){ S = s.settings; paintAuth(); } }catch(e){} }, 8000);
+  }catch(e){ $('pairstat').textContent = 'Not sent: ' + e.message; }
+};
+
+
+
+// ---- display -------------------------------------------------------------
+let disp = {on:true, invert:false, rotate:false, brightness:255, refresh_ms:2000};
+
+function paintDisp(){
+  const set = function(id, active, onText, offText){
+    const b = $(id);
+    b.textContent = active ? onText : offText;
+    b.className = 'btn' + (active ? ' on' : '');
+  };
+  set('dispon',  disp.on,     'Screen on',    'Screen off');
+  set('dispinv', disp.invert, 'Inverted',     'Normal');
+  set('disprot', disp.rotate, 'Rotated 180°', 'Upright');
+  $('dispbrightval').textContent = '— ' + disp.brightness + ' of 255';
+  $('dispbright').value = disp.brightness;
+  $('disprefresh').value = (disp.refresh_ms / 1000);
+  $('dispnote').textContent = disp.on
+    ? 'The screen is showing the battery, power and levelling.'
+    : 'The screen is blanked. The hub carries on running and the dashboard is unaffected.';
+}
+
+$('dispon').onclick  = function(){ disp.on = !disp.on; paintDisp(); };
+$('dispinv').onclick = function(){ disp.invert = !disp.invert; paintDisp(); };
+$('disprot').onclick = function(){ disp.rotate = !disp.rotate; paintDisp(); };
+$('dispbright').oninput = function(e){
+  disp.brightness = parseInt(e.target.value, 10) || 1;
+  paintDisp();
+};
+$('disprefresh').onchange = function(e){
+  const secs = parseFloat(e.target.value);
+  disp.refresh_ms = Math.round(Math.max(0.5, Math.min(60, isNaN(secs) ? 2 : secs)) * 1000);
+  paintDisp();
+};
+
+
+$('save').onclick = async ()=>{
+  readNets();
+  const body={wifi:{mode:mode, ap_ssid:$('apssid').value.trim(),
+                    networks:nets.map(function(n){ return {ssid:n.ssid, password:n.password||'', on:n.on!==false}; }),
+                    ap_always:apAlways,
+                    join_timeout_s:parseInt($('jointo').value,10)||15,
+                    retry_s:parseInt($('retrys').value,10)||300}, devices:{}};
+  if($('appass').value) body.wifi.ap_password=$('appass').value;
+  SLOTS.forEach(([k])=>{ const el=$('sel-'+k); if(el) body.devices[k]=el.value; });
+  if($('vkey').value.trim()) body.devices.victron_key=$('vkey').value.trim();
+  body.location={lat:$('lat').value.trim(), lon:$('lon').value.trim(), name:$('place').value.trim(),
+                 source:wxMode, from:locFrom};
+  body.alerts = {off: alertsOff.slice(), sound: alertSound,
+                 low_soc: parseInt($('lowsoc').value, 10) || 20};
+  body.panel = {click_volume: +$('clickvol').value, alarm_volume: +$('alarmvol').value};
+  body.switches = Array.prototype.map.call(document.querySelectorAll('[data-swn]'),
+    function(e){ return e.value.trim(); });
+  body.switch_icons = Array.prototype.map.call(document.querySelectorAll('[data-swi]'),
+    function(e){ return e.value; });
+  body.checklist = $('checklist').value.split('\n')
+    .map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+  body.display = {overview:views.overview, level:views.level, gps_enabled:gpsOn,
+                  level_ok:parseFloat($('lvlok').value)||1,
+                  level_warn:parseFloat($('lvlwarn').value)||20,
+                  level_max:parseFloat($('lvlmax').value)||30,
+                  level_refresh_ms:parseInt($('lvlms').value,10)||500,
+                  level_swap_xy:orient.swap, level_invert_roll:orient.roll,
+                  level_invert_pitch:orient.pitch, level_log:lvlLog,
+                  on:disp.on, invert:disp.invert, rotate:disp.rotate,
+                  brightness:disp.brightness, refresh_ms:disp.refresh_ms};
+  if(mode==='sta' && !body.wifi.networks.length){
+    $('saveres').textContent='Add at least one network, or switch to hotspot mode.'; return; }
+  $('save').disabled=true; $('saveres').textContent='Saving...';
+  try{
+    const r = await (await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)})).json();
+    if(!r.ok) throw new Error(r.error||'save failed');
+    S=r.settings; $('appass').value=''; $('vkey').value=''; paintAuth();
+    $('saveres').textContent='Saved.';
+    $('restartnote').textContent = r.restart_required
+      ? 'Network settings changed - restart the hub to apply them. If the new details are wrong the hub falls back to its hotspot, so you can always get back in.'
+      : 'Device changes take effect on the next poll. No restart needed.';
+    load();
+  }catch(e){ $('saveres').textContent = 'Not saved: ' + e.message; }
+  $('save').disabled=false;
+};
+
+// Where the forecast comes from. Automatic: the van's GPS while it has a fix,
+// else the fixed location. Fixed: always the fixed location. The fixed
+// location also remembers how it was filled in, so the page can say.
+const LOC_FROM = {typed:'This location was typed in.', gps:'This location came from the van’s GPS.',
+                  device:'This location came from a phone or laptop.'};
+let wxMeta = null;
+function paintWxMode(){
+  [].forEach.call(document.querySelectorAll('#wxmode .btn'), function(b){
+    b.classList.toggle('on', b.dataset.wx === wxMode); });
+  const gpsOn = !!(S && S.display && S.display.gps_enabled);
+  $('wxmodehelp').textContent = wxMode === 'fixed'
+    ? 'Always the fixed location below, wherever the van is. The GPS is not used for the forecast.'
+    : 'The van’s own position while the GPS has a fix, so the forecast follows the van. '
+      + 'Without a fix, the fixed location below.'
+      + (gpsOn ? '' : ' The GPS is switched off (Settings → GPS), so for now that means the fixed location.');
+  $('fixhelp').textContent = wxMode === 'fixed'
+    ? 'The forecast is always for here.'
+    : 'Only used while the GPS has no fix: usually where the van lives.';
+  $('locstat').textContent = LOC_FROM[locFrom] || '';
+  if(wxMeta) paintWxNow(wxMeta);
+}
+[].forEach.call(document.querySelectorAll('#wxmode .btn'), function(b){
+  b.onclick = function(){ wxMode = b.dataset.wx; paintWxMode(); }; });
+['lat', 'lon'].forEach(function(id){
+  $(id).addEventListener('input', function(){ locFrom = 'typed'; $('locstat').textContent = LOC_FROM.typed; }); });
+
+$('usegps').onclick = async ()=>{
+  $('locstat').textContent = 'Asking the hub…';
+  try{
+    const g = (await (await fetch('/api/data', {cache:'no-store'})).json()).gps || {};
+    if(!g.configured){ $('locstat').textContent = 'The GPS is switched off (Settings → GPS).'; return; }
+    if(!g.fix || g.lat == null){ $('locstat').textContent = 'The GPS has no fix at the moment. Try again outdoors, or type it in.'; return; }
+    $('lat').value = (+g.lat).toFixed(4); $('lon').value = (+g.lon).toFixed(4);
+    // the place name the forecast has already found for the van, if it has one
+    $('place').value = wxMeta && wxMeta.source === 'gps' && /^Near /.test(wxMeta.place || '')
+      ? wxMeta.place.slice(5) : '';
+    locFrom = 'gps';
+    $('locstat').textContent = LOC_FROM.gps + ' Press Save to store it.';
+  }catch(e){ $('locstat').textContent = 'Could not reach the hub.'; }
+};
+
+$('usehere').onclick = ()=>{
+  // Browsers only share their location with secure (https) pages, and the
+  // hub's own pages are plain http, so this mostly works in the Android app.
+  if(!navigator.geolocation || !window.isSecureContext){
+    $('locstat').textContent = 'This browser won’t share its location with the hub’s page: it only does that over a secure connection, which the hub doesn’t have. Use the van’s GPS position, or type it in.';
+    return;
+  }
+  $('locstat').textContent = 'Getting location…';
+  navigator.geolocation.getCurrentPosition(
+    p=>{ $('lat').value=p.coords.latitude.toFixed(4); $('lon').value=p.coords.longitude.toFixed(4);
+         locFrom = 'device';
+         $('locstat').textContent = LOC_FROM.device + ' Press Save to store it.'; },
+    ()=>{ $('locstat').textContent = 'Location denied or unavailable. Use the van’s GPS position, or type it in.'; },
+    {timeout:10000});
+};
+
+// One plain sentence: where the hub's forecast is for right now, and why.
+function paintWxNow(m){
+  const fixedName = m.fixed_place || ((S && S.location && S.location.lat)
+    ? S.location.lat + ', ' + S.location.lon : 'the fixed location');
+  const gpsName = /^Near /.test(m.place || '') ? 'near ' + m.place.slice(5) : 'where the van is';
+  const gpsOn = !!(S && S.display && S.display.gps_enabled);
+  let t;
+  if(m.mode === 'fixed'){
+    t = !m.configured
+      ? '<b>No fixed location yet.</b> Fill one in below, or choose Automatic.'
+      : m.source === 'gps'
+        ? '<b>Changing to the fixed location</b> (' + esc(fixedName) + '). The forecast updates the next time the hub has internet.'
+        : 'Now: <b>the fixed location</b>, ' + esc(fixedName) + '. The GPS is not used for the forecast.';
+  } else if(m.source === 'gps'){
+    t = m.gps_fix
+      ? 'Now: <b>the van’s GPS position</b>, ' + esc(gpsName) + '. It follows the van as it moves.'
+      : 'Now: <b>where the GPS last placed the van</b>, ' + esc(gpsName) + '. The GPS has no fix at the moment.';
+  } else if(!m.configured){
+    t = '<b>No forecast location.</b> ' + (gpsOn ? 'The GPS has no fix yet' : 'The GPS is switched off')
+      + ', and there is no fixed location below.';
+  } else if(m.gps_fix){
+    t = '<b>Changing to the van’s GPS position.</b> The forecast updates the next time the hub has internet.';
+  } else {
+    t = 'Now: <b>the fixed location</b>, ' + esc(fixedName) + ', because '
+      + (gpsOn ? 'the GPS has no fix. It changes to the van’s position when the GPS gets one.'
+               : 'the GPS is switched off.');
+  }
+  if(m.mode && m.mode !== wxMode) t += ' <i>Save to change this.</i>';
+  $('wxnow').innerHTML = t;
+}
+
+async function wxInfo(){
+  try{
+    const r = await (await fetch('/api/weather')).json();
+    const m = r.meta || {};
+    wxMeta = m;
+    paintWxNow(m);
+    let t = '';
+    if(r.ok && m.age_s!=null){
+      const a = m.age_s < 5400 ? Math.max(1,Math.round(m.age_s/60))+' min' : Math.round(m.age_s/3600)+' h';
+      t = 'Forecast stored, ' + a + ' old.' + (m.stale ? ' Out of date - the hub needs a network with internet.' : '');
+    }
+    else if(r.ok) t = 'Forecast stored.';
+    else if(m.configured) t = 'No forecast stored yet.' + (m.online ? '' : ' The hub has no internet route at the moment.');
+    if(m.error) t += ' Last attempt: ' + m.error;
+    $('wxstat').textContent = t;
+  }catch(e){}
+}
+
+$('reboot').onclick = async ()=>{
+  if(!confirm('Restart the hub now? Monitoring stops for about 15 seconds.')) return;
+  $('reboot').disabled=true; $('saveres').textContent='Restarting...';
+  try{ await fetch('/api/reboot',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }catch(e){}
+  setLink('busy','Hub restarting...');
+  setTimeout(()=>location.reload(), 16000);
+};
+
+// An eye on every password box. Pressed, it shows what is typed; on a box left
+// blank for a password the hub already holds, it asks the hub for that one
+// (behind the hub password) and shows it for 30 s, then hides and clears it
+// again, so it is never left on screen or sent back unchanged by mistake.
+const EYE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>'
+  + '<circle cx="12" cy="12" r="3"/></svg>';
+const SHOW_MS = 30000;
+// which stored password a box stands for, or null when there is none to fetch
+function storedFor(inp){
+  if(!S) return null;
+  if(inp.id === 'appass') return S.wifi.ap_password_set ? {what:'ap'} : null;
+  if(inp.id === 'vkey') return S.devices.victron_key_set ? {what:'victron'} : null;
+  if(inp.classList.contains('n-pass')){
+    const row = inp.closest('.ctl[data-i]'), n = row && nets[+row.dataset.i];
+    return n && n.password_set ? {what:'net', ssid:n.ssid} : null;
+  }
+  return null;
+}
+function addEye(inp){
+  if(inp.dataset.eye) return;
+  inp.dataset.eye = '1';
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'btn eye'; b.innerHTML = EYE;
+  b.title = 'Show'; b.setAttribute('aria-label', 'Show password');
+  inp.after(b);
+  let timer = null;
+  const hide = function(){
+    clearTimeout(timer); timer = null;
+    inp.type = 'password'; b.classList.remove('on');
+    b.title = 'Show'; b.setAttribute('aria-label', 'Show password');
+    if(inp.dataset.revealed){ inp.value = ''; delete inp.dataset.revealed; }
+  };
+  b.onclick = async function(){
+    if(inp.type === 'text'){ hide(); return; }
+    const st = !inp.value && storedFor(inp);
+    if(st){
+      b.disabled = true;
+      try{
+        const r = await (await fetch('/api/settings/reveal', {method:'POST',
+          headers:{'Content-Type':'application/json'}, body:JSON.stringify(st)})).json();
+        if(!r.ok) throw new Error(r.error || 'not shown');
+        inp.value = r.value; inp.dataset.revealed = '1';
+      }catch(e){ b.disabled = false; alert('Could not show it: ' + e.message); return; }
+      b.disabled = false;
+    }
+    inp.type = 'text'; b.classList.add('on');
+    b.title = 'Hide'; b.setAttribute('aria-label', 'Hide password');
+    timer = setTimeout(hide, SHOW_MS);
+  };
+  // typing over a shown password makes it the user's own: kept, not cleared
+  inp.addEventListener('input', function(){ delete inp.dataset.revealed; });
+}
+function addEyes(){ document.querySelectorAll('input[type=password]').forEach(addEye); }
+// boxes drawn later (the network list, the password forms) get one too
+new MutationObserver(addEyes).observe(document.body, {childList:true, subtree:true});
+addEyes();
+
+load().then(()=>{ netInfo(); wxInfo(); });
+setInterval(netInfo, 10000);
+setInterval(wxInfo, 30000);
+</script>
+
+<script>
+// ---- the van display's screen: shared settings, changed straight away -----
+(function(){
+  const $ = id => document.getElementById(id);
+  let D = null;
+  async function load(){
+    try{ D = (await (await fetch('/api/data', {cache:'no-store'})).json()).display; paint(); }catch(e){}
+  }
+  function paint(){
+    if(!D) return;
+    const b = Math.round(D.brightness * 100);
+    $('vdbright').value = b; $('vdbrightv').textContent = b + '%';
+    $('vdnight').value = D.night;
+    $('vddim').textContent = D.dim ? 'Dims when idle' : 'Dimming off';
+    $('vddim').className = 'btn' + (D.dim ? ' on' : '');
+    $('vdoff').textContent = D.offmode ? 'Off mode on' : 'Off mode';
+    $('vdoff').className = 'btn' + (D.offmode ? ' on' : '');
+    const led = D.status_led !== false;
+    $('vdled').textContent = led ? 'Status light on' : 'Status light off';
+    $('vdled').className = 'btn' + (led ? ' on' : '');
+  }
+  async function share(part){
+    try{
+      const r = await (await fetch('/api/display', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(part)})).json();
+      if(r.display){ D = r.display; paint(); }
+    }catch(e){ alert('Could not reach the hub'); }
+  }
+  $('vdbright').oninput = () => { $('vdbrightv').textContent = $('vdbright').value + '%'; };
+  $('vdbright').onchange = () => share({brightness: +$('vdbright').value / 100});
+  $('vdnight').onchange = () => share({night: $('vdnight').value});
+  $('vddim').onclick = () => D && share({dim: !D.dim});
+  $('vdoff').onclick = () => D && share({offmode: !D.offmode});
+  $('vdled').onclick = () => D && share({status_led: D.status_led === false});
+  setTimeout(load, 2500);          // after the page's own requests, not alongside them
+
+  // ---- levelling calibration ----
+  async function cal(action, msg){
+    $('lvcalres').textContent = msg;
+    try{
+      const r = await (await fetch('/api/level', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({action: action})})).json();
+      $('lvcalres').textContent = r.ok ? (action === 'calibrate'
+        ? 'Level set \u2014 zero is now ' + r.roll.toFixed(1) + '\u00b0 / ' + r.pitch.toFixed(1) + '\u00b0'
+        : 'Calibration cleared.') : ('Not set: ' + (r.error || 'refused'));
+    }catch(e){ $('lvcalres').textContent = 'Could not reach the hub.'; }
+  }
+  $('lvcal').onclick = () => { if(confirm('Set the current position as level?\n\nThe van should be on ground you know to be flat and have stopped moving.')) cal('calibrate', 'Measuring\u2026'); };
+  $('lvclear').onclick = () => { if(confirm('Clear the stored calibration?')) cal('clear', 'Clearing\u2026'); };
+})();
+</script>
+<script>
+// ---- Settings as a menu of groups -------------------------------------------
+// The page is built as one long list of sections; here it is split into
+// groups, each opened on its own from a menu. The fields all stay on the page,
+// so saving works exactly as before, whichever group is open.
+(function(){
+  const GROUPS = [
+    ["Van display", "display", "Drive checklist, switch names, sound, screen, night mode and the status light"],
+    ["Alerts", "alerts", "Safety warnings, low battery, test alarm and panic"],
+    ["Levelling", "level", "Calibration, thresholds, sensor orientation and drift log"],
+    ["Weather", "weather", "Where the van is, for the forecast"],
+    ["Network", "network", "Wi-Fi to join, and the hotspot the hub makes"],
+    ["Bluetooth devices", "devices", "The battery, DC-DC charger, mains charger and heater"],
+    ["GPS", "gps", "An external GPS receiver"],
+    ["Security", "security", "The hub password, and pairing the van display"],
+    ["More detail", "more", "Battery and chargers, heater and forecast in full"]];
+  const grid = document.querySelector('.grid');
+  const save = document.getElementById('savecard');
+  const byName = {}, box = {};
+  GROUPS.forEach(g => byName[g[0]] = g);
+  let cur = null;
+  const hidden = document.createElement('div'); hidden.style.display = 'none';
+  [...grid.children].forEach(el => {
+    if(el === save) return;
+    if(el.classList.contains('section')){
+      const g = byName[el.textContent.trim()];
+      cur = g ? g[1] : null;
+      if(cur && !box[cur]){ box[cur] = document.createElement('div'); box[cur].className = 'grid sgroup'; }
+      el.remove(); return;                        // the menu names the group now
+    }
+    (cur ? box[cur] : hidden).appendChild(el);
+  });
+  const menu = document.createElement('div'); menu.className = 'smenu';
+  menu.innerHTML = GROUPS.filter(g => box[g[1]]).map(g => '<a href="#' + g[1] + '"><div><div class="t">' + g[0] +
+    '</div><div class="d">' + g[2] + '</div></div><span class="chev">&rsaquo;</span></a>').join('');
+  const back = document.createElement('a'); back.id = 'sback'; back.href = '#'; back.className = 'btn';
+  back.innerHTML = '&lsaquo; All settings';
+  const foot = document.createElement('div'); foot.id = 'savefoot'; foot.appendChild(save);
+  grid.replaceWith(menu);
+  menu.after(back);
+  let last = back;
+  GROUPS.forEach(g => { if(box[g[1]]){ last.after(box[g[1]]); last = box[g[1]]; } });
+  last.after(foot); foot.after(hidden);
+  const h1 = document.querySelector('header h1');
+  const base = h1.innerHTML;
+  function show(){
+    const key = location.hash.slice(1), g = GROUPS.find(x => x[1] === key && box[key]);
+    menu.style.display = g ? 'none' : '';
+    back.style.display = g ? 'inline-flex' : 'none';
+    GROUPS.forEach(x => box[x[1]] && box[x[1]].classList.toggle('open', !!g && x[1] === key));
+    foot.style.display = g && key !== 'more' ? 'block' : 'none';
+    h1.innerHTML = g ? '<img class="logo" src="/logo.jpg" alt="">Settings &middot; ' + g[0] : base;
+    window.scrollTo(0, 0);
+  }
+  addEventListener('hashchange', show);
+  show();
+})();
+</script>
+</body>
+</html>

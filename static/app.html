@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0e12">
+<!-- Add to Home Screen: the Camperlux icon and name, opening full-screen -->
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-180.jpg">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Camperlux">
+<!-- black-translucent: the status bar sits over the page, and #app's top padding
+     (the safe area) keeps the page clear of it - with "black" the space was given twice -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>if(/; wv\)/.test(navigator.userAgent)) document.documentElement.classList.add("wv");</script>
+<title>IntrepidVan</title>
+<style>
+/* The van display's look, for any screen. Colours are the display's own
+   (display/gfx.py); on a wide screen the pages are laid out as on the 4"
+   panel, on a phone the cards stack. */
+:root{
+  --bg:#0f0e12; --bgtop:#15131a; --bgbot:#0a090d; --panel:#1c1a22; --panel2:#27242e;
+  --line:#34303c; --hi:#2c2934; --txt:#efe9e0; --muted:#9a8f9e; --green:#3fb950;
+  --amber:#d29922; --red:#f85149; --blue:#58a6ff; --cyan:#39d3c3; --brand:#d3a94a;
+  --flame:#ff9d3c; --ember:#ff6a3d; --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+  font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;user-select:none}
+#app{position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;flex-direction:column;
+  transform-origin:0 0;
+  background:linear-gradient(var(--bgtop),var(--bgbot));
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+body.alerting #app{top:var(--alerth,52px);padding-top:0}
+/* Inside the Android app the app itself keeps the page clear of the status and
+   navigation bars, yet its WebView still reports them as safe areas: without
+   this the space was given twice, a band above the header and below the tabs. */
+html.wv #app{padding:0}
+html.wv nav{height:60px;padding-bottom:4px}
+html.wv #alertbar{padding-top:10px}
+/* no hub password yet: a reminder in the header, until one is set */
+#nopw{background:var(--amber);color:#15131a;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;
+  text-decoration:none;white-space:nowrap}   /* the banner covers the notch */
+#alertbar{position:fixed;left:0;right:0;top:0;z-index:950;display:none;align-items:center;gap:12px;
+  padding:calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
+  background:var(--red);color:#fff;font-size:15px;font-weight:600;box-shadow:0 2px 18px rgba(0,0,0,.5)}
+#alertbar.show{display:flex}
+#alertbar .atext{flex:1;min-width:0}
+#alertbar .adetail{display:block;font-weight:400;font-size:13px;opacity:.92;margin-top:2px}
+#alertbar button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);
+  border-radius:10px;padding:8px 12px;font-weight:600;flex:0 0 auto}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+svg{display:block}
+.ic{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- header: the page's name, its selector or buttons, status and clock -- */
+header{height:48px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 14px}
+#title{font-weight:600;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#hbar{display:flex;gap:8px;align-items:center;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+#hbar::-webkit-scrollbar{display:none}
+.chip{display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:999px;
+  padding:5px 12px 5px 9px;font-size:14px;color:var(--txt);white-space:nowrap}
+.chip .ic{width:16px;height:16px;color:var(--muted)}
+.seg{display:flex;background:var(--panel);border-radius:999px;padding:2px}
+.seg button{padding:4px 12px;border-radius:999px;font-size:14px;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#000}
+#hright{margin-left:auto;display:flex;align-items:center;gap:12px;flex:0 0 auto}
+#link{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+#link.ok{background:var(--green)} #link.stale{background:var(--amber)} #link.down{background:var(--red)}
+#clock{font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+#gear{display:flex;padding:4px;color:var(--muted)} #gear .ic{width:22px;height:22px}
+
+/* ---- the pages, side by side for swiping ---- */
+#pages{position:relative;flex:1 1 auto;overflow:hidden;touch-action:pan-y}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:8px;display:none;
+  -webkit-overflow-scrolling:touch}
+.page.show{display:block}
+.view{display:none;height:100%} .view.show{display:block}
+
+/* ---- the tab bar ---- */
+nav{height:calc(60px + env(safe-area-inset-bottom));flex:0 0 auto;display:flex;justify-content:space-around;align-items:stretch;
+  padding:4px 6px calc(4px + env(safe-area-inset-bottom));border-top:1px solid #1d1b22}
+nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;font-size:13px;color:var(--muted);border-radius:12px;margin:0 2px;white-space:nowrap;overflow:hidden}
+nav button .ic{width:20px;height:20px}
+nav button.on{color:var(--brand);background:#3a321f}
+
+/* ---- cards and controls ---- */
+.card{background:var(--panel);border-radius:var(--r);padding:12px 14px;position:relative;
+  box-shadow:0 3px 0 #0006, inset 0 1px 0 var(--hi)}
+.lab{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:13px} .num{font-variant-numeric:tabular-nums}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--panel2);
+  border-radius:12px;min-height:44px;padding:0 12px;font-size:17px;font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.lit{background:var(--brand);color:#000} .btn.hot{background:var(--flame);color:#000}
+.btn.danger{background:#7a2b2c} .btn.go{background:#2c6b3a}
+.btn .ic{width:18px;height:18px}
+.step{display:inline-flex;align-items:center;gap:4px}
+.step button{width:32px;height:32px;border-radius:50%;background:var(--panel2);display:flex;
+  align-items:center;justify-content:center} .step button .ic{width:14px;height:14px}
+.step b{min-width:58px;text-align:center;background:var(--panel2);border-radius:8px;padding:5px 6px;
+  font-variant-numeric:tabular-nums}
+.tog{width:52px;height:28px;border-radius:14px;background:var(--panel2);position:relative;flex:0 0 auto}
+.tog::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;
+  background:var(--muted);transition:.2s}
+.tog.on{background:var(--brand)} .tog.on::after{left:28px;background:var(--txt)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}
+.grid{display:grid;gap:8px;height:100%}
+
+/* layouts per page: the display's on a wide screen, stacked on a phone */
+.home{grid-template-columns:1fr 1fr} .home .right{display:grid;gap:8px;grid-template-rows:1fr auto}
+.two{grid-template-columns:1fr 1fr}
+.side{grid-template-columns:minmax(0,1.7fr) minmax(170px,1fr)}
+.sw{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
+/* Laid out as the display: rows share the height, and diagrams shrink to fit
+   it - without this a wide column made the clock, the heater diagram and the
+   bubble taller than the screen on a phone held sideways. */
+body:not(.narrow) .home,body:not(.narrow) .two,body:not(.narrow) .side{grid-template-rows:minmax(0,1fr)}
+body:not(.narrow) .grid > *{min-height:0}
+body:not(.narrow) #lvmain{min-height:0 !important}
+.dia,#clockface{max-width:100%;max-height:100%}
+/* a phone held upright: the cards stack (body.narrow is set by fit() below) */
+body.narrow .home,body.narrow .two,body.narrow .side{grid-template-columns:1fr;height:auto}
+body.narrow .sw{grid-template-columns:1fr 1fr;grid-template-rows:none;height:auto}
+body.narrow .grid{height:auto}
+body.narrow #clock{font-size:16px}
+body.narrow header{gap:8px;padding:6px 10px;height:auto;flex-wrap:wrap;row-gap:6px}
+body.narrow #title{flex:1 1 0} body.narrow #hbar{order:3;width:100%} body.narrow #hbar:empty{display:none}
+body.narrow nav{padding-left:2px;padding-right:2px}
+body.narrow nav button{font-size:10.5px;margin:0 1px;padding:0}
+/* upright phone: the weather and battery cards' contents sit in the middle */
+body.narrow #wbody,body.narrow #hbatt{text-align:center}
+body.narrow #wbody>div:first-child,body.narrow #hbatt .battbox{justify-content:center}
+
+/* ---- Home ---- */
+#clockface{width:100%;height:100%;max-height:100%;cursor:pointer}
+.wx{cursor:pointer;min-height:120px}
+.wx .big{font-size:44px;font-weight:700;line-height:1}
+.wxmap{margin-top:10px}
+.wxmap a{position:relative;display:block;width:100%;height:110px;border-radius:10px;
+  overflow:hidden;background:#27242e;border:1px solid var(--line)}
+.wxmap a img{position:absolute;width:257px;height:257px;max-width:none}
+.wxmap a i{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  background:#f85149;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+.wxmap a b{position:absolute;right:3px;bottom:2px;font:9px sans-serif;color:#333;
+  background:rgba(255,255,255,.75);padding:0 2px;border-radius:2px}
+.wxmap .ll{text-align:center;margin-top:5px}
+.battbox{display:flex;gap:14px;align-items:center}
+.pct{font-size:36px;font-weight:700}
+
+/* ---- Power flow and heater diagram ---- */
+.dia{width:100%;height:100%}
+.dia{font-size:15px} .dia text{fill:var(--txt);font-family:inherit}   /* size on the svg, so a label's own font-size wins */
+.dia .m{fill:var(--muted)} .dia .b{font-weight:600;font-size:18px}
+.trk{fill:none;stroke-width:3} .flowdots{fill:none;stroke-width:7;stroke-linecap:round;
+  stroke-dasharray:0 14;animation:run linear infinite}
+@keyframes run{to{stroke-dashoffset:-14}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flick{0%,100%{transform:scale(1,1)}30%{transform:scale(.94,1.08)}60%{transform:scale(1.04,.93)}80%{transform:scale(.97,1.04)}}
+@keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-44px);opacity:0}}
+@keyframes puff{0%{transform:translate(0,0) scale(.5);opacity:.8}100%{transform:translate(4px,20px) scale(1.4);opacity:0}}
+@keyframes dash{to{stroke-dashoffset:-12}}
+@keyframes glow{0%,100%{opacity:.55}50%{opacity:1}}
+.fan{transform-box:fill-box;transform-origin:50% 50%;animation:spin 1.6s linear infinite}
+.flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .9s ease-in-out infinite}
+.pipe{stroke-width:6;fill:none;stroke-dasharray:6 6;animation:dash .3s linear infinite}
+.bub{animation:rise 1.7s ease-in infinite}
+.puff{animation:puff 1.4s ease-out infinite}
+.elem{animation:glow 1.6s ease-in-out infinite}
+
+/* ---- heater controls ---- */
+.ctrls{display:grid;gap:7px;align-content:start}
+.ctrls .row{display:grid;grid-template-columns:1fr 48px;gap:7px}
+
+/* ---- Lights ---- */
+#wheel{width:150px;height:150px;border-radius:50%;position:relative;cursor:crosshair;flex:0 0 auto;
+  background:radial-gradient(circle,#fff 0,#fff0 70%),conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
+#wheel.off{opacity:.45}
+#wmark{position:absolute;width:16px;height:16px;border-radius:50%;border:3px solid var(--txt);
+  box-shadow:0 0 0 2px #000;transform:translate(-50%,-50%)}
+#panicbtn{width:112px;height:112px;border-radius:50%;background:#b8403b;color:var(--txt);
+  font-weight:700;font-size:18px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;margin:10px auto;position:relative;touch-action:none}
+#panicring{position:absolute;inset:-7px;border-radius:50%;
+  background:conic-gradient(var(--txt) var(--p,0%),#0000 0);-webkit-mask:radial-gradient(#0000 60px,#000 61px);
+  mask:radial-gradient(#0000 60px,#000 61px)}
+
+/* ---- Level ---- */
+.lvl svg text{font-family:inherit}
+
+/* ---- Switches ---- */
+.swb{display:flex;flex-direction:column;justify-content:space-between;text-align:left;
+  background:var(--panel);border-radius:var(--r);padding:14px;min-height:108px;
+  box-shadow:0 3px 0 #0006, inset 0 1px 0 var(--hi);border:1px solid transparent}
+.swb .ic{width:28px;height:28px;color:var(--muted)}
+.swb.on{background:#33291a;border-color:var(--brand)} .swb.on .ic{color:var(--brand)}
+.swb b{font-size:18px;margin-top:10px} .swb .ft{display:flex;justify-content:space-between;align-items:center}
+
+/* ---- Drive ---- */
+.tick{display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer;font-size:17px}
+.tick .box{width:24px;height:24px;border-radius:5px;border:2px solid var(--line);display:flex;
+  align-items:center;justify-content:center;flex:0 0 auto}
+.tick.on{color:var(--muted)} .tick.on .box{background:var(--green);border-color:var(--green)}
+.check{display:flex;gap:12px;align-items:flex-start;padding:7px 0}
+
+/* ---- the logo page: the whole screen, as on the display ---- */
+#logopage{display:none;align-items:center;justify-content:center;background:var(--bg)}
+#logopage.show{display:flex}
+#badge{width:min(88%,88vh);height:auto;max-height:88%;border-radius:50%;pointer-events:none}
+body.logo header,body.logo nav{display:none}
+
+/* ---- pop-ups ---- */
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:50}
+#modal.show{display:flex}
+#modal .box{background:var(--panel);border-radius:16px;padding:18px;width:min(380px,92vw);text-align:center}
+#modal h3{margin:4px 0 12px;font-size:21px} #modal p{margin:6px 0;color:var(--muted)}
+#modal .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+#toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:var(--panel2);
+  padding:9px 16px;border-radius:12px;display:none;z-index:40;font-size:15px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div id="title">Home</div>
+    <div id="hbar"></div>
+    <div id="hright"><a id="nopw" href="/settings#security" style="display:none">Set a hub password</a>
+      <span id="link" title="Hub"></span><span id="clock">--:--</span>
+      <a id="gear" href="/settings" title="Settings"><svg class="ic" viewBox="0 0 18 18"><use href="#i-gear"/></svg></a></div>
+  </header>
+  <div id="pages">
+
+  <!-- ================= Home ================= -->
+  <section class="page" data-page="home">
+    <div class="view show" data-view="main">
+      <div class="grid home">
+        <div class="card" style="padding:6px;display:flex;align-items:center;justify-content:center"
+             onclick="subview('home','timer')"><svg id="clockface" viewBox="-110 -110 220 220"></svg></div>
+        <div class="right">
+          <div class="card wx" onclick="subview('home','forecast')">
+            <div style="display:flex;justify-content:space-between"><span class="lab">Weather</span>
+              <span class="muted small" id="wplace"></span></div>
+            <div id="wbody"></div>
+          </div>
+          <div class="card" onclick="go('power');subview('power','battery')"><div id="hbatt"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="view" data-view="forecast"><div class="grid" style="grid-template-rows:auto 1fr">
+      <div class="card"><div style="display:flex;justify-content:space-between"><span class="lab">Next 12 hours</span>
+        <span class="small" style="color:var(--blue)">bars: chance of rain</span></div><svg id="fc12" viewBox="0 0 440 100" style="width:100%"></svg></div>
+      <div class="grid" id="fcdays" style="grid-template-columns:repeat(3,1fr);height:auto"></div>
+    </div></div>
+    <div class="view" data-view="timer">
+      <div id="ktview" style="text-align:center">
+        <div id="kttime" class="num" style="font-size:min(22vw,110px);font-weight:700;margin-top:6px">05:00</div>
+        <div class="muted" id="ktstate">Set the time</div>
+        <div class="grid" style="grid-template-columns:repeat(4,1fr);height:auto;margin-top:14px">
+          <button class="btn" data-kt="-60">&minus; 1 min</button><button class="btn" data-kt="60">+ 1 min</button>
+          <button class="btn" data-kt="300">+ 5 min</button><button class="btn" data-kt="600">+ 10 min</button></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;height:auto;margin-top:8px">
+          <button class="btn" id="ktreset">Reset</button><button class="btn go" id="ktgo">Start</button></div>
+      </div>
+      <div id="acview" style="display:none;text-align:center">
+        <div id="actime" class="num" style="font-size:min(22vw,110px);font-weight:700;color:var(--brand)">07:00</div>
+        <div class="muted" id="acnote">&nbsp;</div>
+        <div class="grid" style="grid-template-columns:repeat(4,1fr);height:auto;margin-top:14px">
+          <button class="btn" data-ac="-60">&minus; 1 h</button><button class="btn" data-ac="60">+ 1 h</button>
+          <button class="btn" data-ac="-5">&minus; 5 min</button><button class="btn" data-ac="5">+ 5 min</button></div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);height:auto;margin-top:8px">
+          <button class="btn" id="acdays">Every day</button><button class="btn" id="acwarm">No warm-up</button>
+          <button class="btn" id="acon">Alarm off</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Power ================= -->
+  <section class="page" data-page="power">
+    <div class="view show" data-view="flow"><svg class="dia" id="flow" viewBox="0 36 480 242" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="view" data-view="details"><div class="grid two">
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="lab">Battery</span><button class="chip" onclick="subview('power','day')">24 h</button></div>
+        <div id="pdbatt"></div></div>
+      <div class="grid" id="pdtiles" style="grid-template-rows:repeat(4,1fr)"></div>
+    </div></div>
+    <div class="view" data-view="day"><div class="grid" style="grid-template-rows:1fr auto">
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="lab">Battery &middot; last 24 hours</span><button class="chip" onclick="subview('power','flow')">Now</button></div>
+        <svg id="daychart" viewBox="0 0 440 150" style="width:100%;height:calc(100% - 30px)" preserveAspectRatio="none"></svg></div>
+      <div class="card"><span class="lab">Energy today</span><div id="today" class="grid" style="grid-template-columns:repeat(4,1fr);height:auto;margin-top:6px"></div></div>
+    </div></div>
+    <div class="view" data-view="battery"><div class="grid two" id="battpage"></div></div>
+    <div class="view" data-view="lights"><div class="grid side">
+      <div class="card" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center">
+        <div style="width:100%" class="lab">Ambient light</div>
+        <div id="wheel"><div id="wmark"></div></div>
+        <div style="display:grid;gap:8px;min-width:130px">
+          <button class="btn" id="amon">Off</button><button class="btn" id="amcyc">Cycle</button>
+          <button class="btn" id="amwarm">Warm</button>
+          <div class="muted small" style="text-align:center">Brightness</div>
+          <div class="step" style="justify-content:center"><button data-ab="-10"><svg class="ic" viewBox="0 0 18 18"><use href="#i-minus"/></svg></button>
+            <b id="ambv">50%</b><button data-ab="10"><svg class="ic" viewBox="0 0 18 18"><use href="#i-plus"/></svg></button></div>
+        </div>
+      </div>
+      <div class="card" style="text-align:center"><div class="lab" style="text-align:left">Security</div>
+        <button id="panicbtn"><span id="panicring"></span><svg class="ic" viewBox="0 0 18 18" style="width:28px;height:28px"><use href="#i-siren"/></svg>Hold</button>
+        <div class="muted small">Hold for the siren</div>
+        <button class="btn" id="guardbtn" style="width:100%;margin-top:12px">Guard off</button>
+        <div class="muted small" id="guardnote" style="margin-top:6px"></div>
+        <button class="btn" id="ledbtn" style="width:100%;margin-top:12px">Status light on</button>
+        <div class="muted small" style="margin-top:6px">The van display's gold light. Alarms still flash it.</div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ================= Heater ================= -->
+  <section class="page" data-page="heater">
+    <div class="view show" data-view="main"><div class="grid side">
+      <div>
+        <svg class="dia" id="hdia" viewBox="0 36 292 242" preserveAspectRatio="xMidYMid meet"></svg>
+        <svg class="dia" id="hdial" viewBox="0 36 292 242" preserveAspectRatio="xMidYMid meet" style="display:none"></svg>
+      </div>
+      <div class="ctrls">
+        <button class="btn" data-heat="air"><svg class="ic" viewBox="0 0 18 18"><use href="#i-flame"/></svg>Air heat</button>
+        <button class="btn" data-heat="combi"><svg class="ic" viewBox="0 0 18 18"><use href="#i-flame"/></svg>Air + water</button>
+        <button class="btn" data-heat="water"><svg class="ic" viewBox="0 0 18 18"><use href="#i-drop"/></svg>Water heat</button>
+        <button class="btn" data-heat="vent" title="The fan on its own: no flame, no heat"><svg class="ic" viewBox="0 0 18 18"><use href="#i-fan"/></svg>Fan only</button>
+        <div class="row"><button class="btn" id="hwater"><svg class="ic" viewBox="0 0 18 18"><use href="#i-drop"/></svg><span>60&deg;C</span></button>
+          <button class="btn" data-heat="read" title="Read the heater"><svg class="ic" viewBox="0 0 18 18"><use href="#i-refresh"/></svg></button></div>
+        <button class="btn danger" data-heat="off"><svg class="ic" viewBox="0 0 18 18"><use href="#i-power"/></svg>Off</button>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px">
+          <span class="muted">Heat to</span><span class="step"><button id="tminus"><svg class="ic" viewBox="0 0 18 18"><use href="#i-minus"/></svg></button>
+          <b id="ttarget">20&deg;</b><button id="tplus"><svg class="ic" viewBox="0 0 18 18"><use href="#i-plus"/></svg></button></span></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px" title="Fan speed, sent with the next heater command">
+          <span class="muted">Fan</span><button class="btn" data-fan="1" style="min-width:40px;min-height:34px;padding:0">1</button><button class="btn" data-fan="2" style="min-width:40px;min-height:34px;padding:0">2</button><button class="btn" data-fan="3" style="min-width:40px;min-height:34px;padding:0">3</button><button class="btn" data-fan="4" style="min-width:40px;min-height:34px;padding:0">4</button></div>
+        <div class="muted small" id="hmsg" style="text-align:center;min-height:18px"></div>
+      </div>
+    </div></div>
+    <div class="view" data-view="schedule"><div id="sched" class="grid" style="grid-template-rows:repeat(3,auto);height:auto"></div></div>
+  </section>
+
+  <!-- ================= Level ================= -->
+  <section class="page lvl" data-page="level">
+    <div class="view show" data-view="main"><div class="grid side">
+      <div class="card" style="padding:6px;display:flex;flex-direction:column">
+        <svg id="lvmain" viewBox="0 0 200 200" style="flex:1;width:100%;min-height:200px"></svg>
+        <div class="grid" style="grid-template-columns:1fr 1fr;height:auto">
+          <button class="btn lit" id="lvbub">Bubble</button><button class="btn" id="lvwh">Wheels</button></div>
+      </div>
+      <div class="grid" style="grid-template-rows:1fr 1fr auto">
+        <div class="card" id="lvfront"></div><div class="card" id="lvside"></div>
+        <button class="btn on" id="lvcal">Set level here</button>
+      </div>
+    </div></div>
+    <!-- G-force, for driving: as on the display -->
+    <div class="view" data-view="gforce"><div class="grid side">
+      <div class="card" style="padding:6px"><svg id="gball" viewBox="0 0 220 220" style="width:100%;height:100%;min-height:200px"></svg></div>
+      <div class="grid" style="grid-template-rows:repeat(4,1fr)">
+        <div class="card" id="gfwd"></div><div class="card" id="gcor"></div><div class="card" id="gbump"></div>
+        <div class="card" id="gpeak" style="cursor:pointer" title="Tap to reset the peaks"></div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ================= Switches ================= -->
+  <section class="page" data-page="switches"><div class="grid sw" id="swgrid"></div></section>
+
+  <!-- ================= Tanks ================= -->
+  <section class="page" data-page="tanks"><div class="grid two" id="tanksgrid"></div></section>
+
+  <!-- ================= Drive ================= -->
+  <section class="page" data-page="drive"><div class="grid two">
+    <div class="card"><div class="lab">The van</div><div id="dchecks" style="margin-top:6px"></div></div>
+    <div class="card"><div class="lab">Before you go</div><div id="dticks" style="margin-top:4px"></div></div>
+  </div></section>
+
+  <!-- ================= the logo: past either end, no tab ================= -->
+  <section class="page" data-page="logo" id="logopage">
+    <img src="badge.jpg" alt="Camperlux" id="badge">
+  </section>
+
+  </div>
+  <nav id="tabs"></nav>
+</div>
+<div id="modal"><div class="box"><h3 id="mtitle"></h3><div id="mlines"></div>
+  <div class="acts"><button class="btn" id="mno">Cancel</button><button class="btn go" id="myes">Start</button></div></div></div>
+<div id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <!-- the display's line icons (display/icons.py), 18 px box -->
+  <symbol id="i-home" viewBox="0 0 18 18"><path d="M1 9 9 2l8 7M3 8v9h12V8M7 17v-5h4v5"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 18 18"><path d="M11 1 4.5 10l8-1-6 8.5"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 18 18"><path d="M9 17c-3.4 0-5.4-2.6-5-5.6.4-2.7 2.4-3.6 3.2-6.4 1.5 1.3 2.2 2.8 2.4 4.2.8-1.3 1.1-3.3.9-7.6 3.2 2.3 4.5 6 4.2 9.6C14.4 14.8 12.4 17 9 17z"/></symbol>
+  <symbol id="i-level" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.8"/><circle cx="11.5" cy="7" r="2.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-switch" viewBox="0 0 18 18"><rect x="1" y="4.5" width="16" height="9" rx="4.5"/><circle cx="12.5" cy="9" r="2.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-check" viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14" rx="1.5"/><path d="m5 9 3 3 5-6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 18 18"><circle cx="9" cy="9" r="3.4" fill="currentColor" stroke="none"/><path d="M9 1.2v2M9 14.8v2M1.2 9h2M14.8 9h2M3.5 3.5l1.4 1.4M13.1 13.1l1.4 1.4M3.5 14.5l1.4-1.4M13.1 4.9l1.4-1.4" stroke-width="1.6"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 18 18"><rect x="1" y="5" width="14" height="9" rx="1.5"/><path d="M17 8v3" stroke-width="2.4"/><rect x="3.5" y="7.5" width="7" height="4" rx="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 18 18"><circle cx="9" cy="7.5" r="5.7"/><path d="M6.8 13.3 7 14.5M11.2 13.3 11 14.5M7 15h4M7.5 17h3"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 18 18"><path d="M9 1.5s5.5 5.6 5.5 9.6a5.5 5.5 0 0 1-11 0C3.5 7.1 9 1.5 9 1.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 18 18"><path d="M9 1v16M2.1 5l13.8 8M2.1 13 15.9 5"/></symbol>
+  <symbol id="i-power" viewBox="0 0 18 18"><path d="M5 5.3a6.8 6.8 0 1 0 8 0M9 1.5v7"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 18 18"><path d="M15.4 11A6.8 6.8 0 1 1 13.8 4.2"/><path d="M14.5 1l2 6.5L10 6z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 18 18"><path d="M3 9h12" stroke-width="2.6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 18 18"><path d="M3 9h12M9 3v12" stroke-width="2.6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.8"/><path d="M9 9V4.5M9 9l3 1.5"/></symbol>
+  <symbol id="i-alarm" viewBox="0 0 18 18"><circle cx="9" cy="10" r="7.2"/><path d="M9 10V6.5M9 10l2.5 1.5M1.5 4l3-2.5M16.5 4l-3-2.5"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 18 18"><path d="M6.5 1v4M11.5 1v4M3.5 5h11v4a5.5 5.5 0 0 1-11 0zM9 14.5v3"/></symbol>
+  <symbol id="i-engine" viewBox="0 0 18 18"><circle cx="5" cy="11" r="3.5"/><rect x="8.5" y="4" width="8.5" height="13" rx="1"/><path d="M11.3 7v7M14.2 7v7" stroke-width="1.5"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 18 18"><path d="M4 16v-5a5 5 0 0 1 10 0v5M2.5 16h13M9 1v2M2.5 3.5 4 5M15.5 3.5 14 5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 18 18"><circle cx="9" cy="9" r="2.6"/><path d="M9 1.5v2.2M9 14.3v2.2M1.5 9h2.2M14.3 9h2.2M3.7 3.7l1.6 1.6M12.7 12.7l1.6 1.6M3.7 14.3l1.6-1.6M12.7 5.3l1.6-1.6"/><circle cx="9" cy="9" r="5.2"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.9"/><path d="M9 9V3.7M9 9l4.6 2.65M9 9l-4.6 2.65" stroke-width="3.2"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 18 18"><rect x="1" y="2.5" width="16" height="11" rx="1.5"/><path d="M9 13.5v3M5.5 16.5h7"/></symbol>
+  <symbol id="i-music" viewBox="0 0 18 18"><path d="M6.5 14V4L15 2v10"/><circle cx="4.6" cy="14.2" r="2.3" fill="currentColor" stroke="none"/><circle cx="13.1" cy="12.2" r="2.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-usb" viewBox="0 0 18 18"><path d="M9 3v11.5M9 11 5 8.5V6.6M9 9l4-2.5V4.9"/><path d="M9 .5l2.4 3.5H6.6z" fill="currentColor" stroke="none"/><circle cx="5" cy="5.4" r="1.6" fill="currentColor" stroke="none"/><rect x="11.7" y="2.4" width="2.6" height="2.6" rx=".5" fill="currentColor" stroke="none"/><circle cx="9" cy="15.4" r="2.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 18 18"><path d="M3 6h10l-1 9.5H4zM13.3 7.9a2.4 2.4 0 0 1 0 5"/><path d="M6 1.5v2.3M9.5 1.5v2.3" stroke-width="1.6"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 18 18"><path d="M2.3 7.4a9.5 9.5 0 0 1 13.4 0M4.9 10.4a5.8 5.8 0 0 1 8.2 0"/><circle cx="9" cy="14.3" r="1.7" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-back" viewBox="0 0 18 18"><path d="M11 3 5 9l6 6" stroke-width="2.4"/></symbol>
+</svg>
+
+<script src="/common.js"></script>
+<script>
+"use strict";
+// ============================================================================
+// State
+// ============================================================================
+const $ = id => document.getElementById(id);
+const PAGES = [["home","Home","home"],["power","Power","bolt"],["heater","Heater","flame"],
+               ["level","Level","level"],["switches","Switches","switch"],["tanks","Tanks","drop"],
+               ["drive","Drive","check"]];
+let D = null;                 // the latest /api/data
+let WX = null;                // the latest /api/weather
+let LV = null;                // the latest /api/level
+let hubOff = 0;               // hub clock minus this device's, s
+let page = 0;
+const LOGO = PAGES.length;    // the logo page: after the tabs' pages, reached by swiping
+const sub = {home:"main", power:"flow", heater:"main", level:"main"};
+let heaterView = "flow", levelView = "bubble", clockView = "timer";
+let target = null, water = 2, busy = null, result = null, resultAt = 0;
+let editing = 0;              // ms of the last local edit to a shared setting
+const ic = (n, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 18 18"><use href="#i-' + n + '"/></svg>';
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hubNow = () => Date.now() / 1000 + hubOff;
+const hm = h => { if(h == null || h < 0) return "–"; if(h >= 99) return "99+ h";
+  const m = Math.round(h * 60); return m < 60 ? m + " m" : Math.floor(m / 60) + " h " + (m % 60) + " m"; };
+// the same, tight: "12h15m", "45m", "99h+"
+const hmShort = h => { if(h == null || h < 0) return "–"; if(h >= 99) return "99h+";
+  const m = Math.round(h * 60); return m < 60 ? m + "m" : Math.floor(m / 60) + "h" + String(m % 60).padStart(2, "0") + "m"; };
+const num = (v, d) => v == null ? "–" : Number(v).toFixed(d || 0);
+function toast(t){ const e = $("toast"); e.textContent = t; e.style.display = "block";
+  clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = "none", 3500); }
+
+async function post(url, body){
+  // the hub's password, when one is set, is asked for and sent by common.js
+  const r = await (await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+                                     body:JSON.stringify(body)})).json();
+  if(r && r.auth) throw new Error("needs the hub's password");
+  if(r && r.ok === false) throw new Error(r.error || "refused");
+  return r;
+}
+async function share(part){           // the display's shared settings, as on the Van page
+  editing = Date.now();
+  try{ const r = await post("/api/display", part); if(D){ D.display = r.display; D.wake = r.wake; } render(); }
+  catch(e){ toast("Not saved: " + e.message); }
+}
+
+// ============================================================================
+// Navigation: tabs, header, sub-views, swipe
+// ============================================================================
+function buildTabs(){
+  $("tabs").innerHTML = PAGES.map((p, i) => '<button data-i="' + i + '">' + ic(p[2]) + p[1] + '</button>').join("");
+  $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => go(+b.dataset.i));
+}
+function go(i){
+  if(typeof i === "string") i = PAGES.findIndex(p => p[0] === i);
+  if(i === page && i !== LOGO){ const n = PAGES[i][0]; if(sub[n]) subview(n, n === "power" ? "flow" : "main"); return; }
+  page = i; showPage(); render();
+  try{ localStorage.setItem("page", i); }catch(e){}
+}
+let shownPage = -1;
+function showPage(){
+  // a page opens at its top: each keeps its own scroll, and coming back to one
+  // left scrolled down hid its heading and the top of its first card
+  document.querySelectorAll(".page").forEach((s, i) => { s.classList.toggle("show", i === page); s.style.transform = "";
+    if(i === page && page !== shownPage) s.scrollTop = 0; });
+  shownPage = page;
+  document.body.classList.toggle("logo", page === LOGO);
+  $("tabs").querySelectorAll("button").forEach((b, i) => b.classList.toggle("on", i === page));
+}
+function subview(pg, v){
+  sub[pg] = v;
+  document.querySelectorAll('.page[data-page="' + pg + '"] .view').forEach(e => e.classList.toggle("show", e.dataset.view === v));
+  if(pg === "power" && v === "day") loadHistory();
+  render();
+}
+function header(){
+  if(page === LOGO) return;
+  const name = PAGES[page][0]; let title = PAGES[page][1], bar = "";
+  const chip = (label, icon, fn) => '<button class="chip" onclick="' + fn + '">' + ic(icon) + esc(label) + '</button>';
+  if(name === "home"){
+    const now = new Date();
+    title = now.toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long"});
+    if(sub.home === "forecast"){ title = "Forecast" + (WX && WX.meta && WX.meta.place ? " · " + WX.meta.place : ""); bar = chip("Home", "back", "subview('home','main')"); }
+    if(sub.home === "timer"){ title = clockView === "alarm" ? "Alarm clock" : "Kitchen timer";
+      bar = chip(clockView === "alarm" ? "Timer" : "Alarm", clockView === "alarm" ? "clock" : "alarm", "clockView='" + (clockView === "alarm" ? "timer" : "alarm") + "';render()")
+          + chip("Home", "back", "subview('home','main')"); }
+  } else if(name === "power"){
+    const cur = sub.power === "battery" ? "battery" : sub.power === "lights" ? "lights" : "flow";
+    bar = '<div class="seg">' + [["Flow","flow"],["Battery","battery"],["Lights","lights"]].map(s =>
+      '<button class="' + (s[1] === cur ? "on" : "") + '" onclick="subview(\'power\',\'' + s[1] + '\')">' + s[0] + '</button>').join("") + '</div>';
+    if(sub.power === "details") bar += chip("24 h", "clock", "subview('power','day')");
+  } else if(name === "heater"){
+    if(sub.heater === "schedule"){ title = "Heater schedule"; bar = chip("Heater", "back", "subview('heater','main')"); }
+    else bar = (heaterView === "flow" ? chip("Dial", "level", "heaterView='dial';render()") : chip("Diagram", "flame", "heaterView='flow';render()"))
+             + chip("Timers", "clock", "subview('heater','schedule')");
+  } else if(name === "level"){
+    if(sub.level === "gforce"){ title = "G-force"; bar = chip("Level", "level", "subview('level','main')"); }
+    else { const l = LV && LV.level; if(l && l.ok && l.off_by != null) title = "Level · " + num(l.off_by, 1) + "° out";
+      bar = chip("G-force", "engine", "subview('level','gforce')"); }
+  } else if(name === "tanks"){ if(tankLevels().demo) bar = '<span class="chip">' + ic("drop") + 'Sample levels</span>';
+  } else if(name === "switches"){ if(!(D && D.relays)) bar = '<span class="chip">' + ic("switch") + 'Not wired yet</span>'; }
+  else if(name === "drive"){ const left = driveLeft(); title = left ? "Not ready · " + left + " to check" : "Ready to drive"; }
+  $("title").textContent = title;
+  if($("hbar").innerHTML !== bar) $("hbar").innerHTML = bar;
+}
+
+// Drag between pages, as on the display: the page follows the finger and the
+// next one comes in beside it; past a quarter of the way it carries on.
+(function(){
+  const box = $("pages"); let x0 = null, y0 = 0, dx = 0, drag = false, nb = null, t0 = 0;
+  const sec = () => document.querySelectorAll(".page");
+  box.addEventListener("pointerdown", e => {
+    if(e.target.closest("#wheel,#panicbtn,#lvmain,#hdial,input,select")) return;
+    x0 = e.clientX; y0 = e.clientY; dx = 0; drag = false; t0 = Date.now();
+  });
+  box.addEventListener("pointermove", e => {
+    if(x0 === null) return;
+    const mx = e.clientX - x0, my = e.clientY - y0;
+    if(!drag){ if(Math.abs(mx) < 14 || Math.abs(mx) < Math.abs(my)) { if(Math.abs(my) > 14) x0 = null; return; }
+      drag = true; try{ box.setPointerCapture(e.pointerId); }catch(er){} }
+    dx = mx / Z;
+    const n = sec().length, want = (page + (dx < 0 ? 1 : n - 1)) % n;
+    if(nb !== want){ if(nb !== null) sec()[nb].classList.remove("show"); nb = want; sec()[nb].classList.add("show"); }
+    const w = box.clientWidth;
+    sec()[page].style.transition = sec()[nb].style.transition = "none";
+    sec()[page].style.transform = "translateX(" + dx + "px)";
+    sec()[nb].style.transform = "translateX(" + (dx + (dx < 0 ? w : -w)) + "px)";
+  });
+  const end = () => {
+    if(x0 === null) return; x0 = null;
+    if(!drag){ return; }
+    const w = box.clientWidth, v = dx * Z / Math.max(1, Date.now() - t0);
+    const goOn = Math.abs(dx) > w / 4 || Math.abs(v) > 0.6;
+    const cur = sec()[page], nx = sec()[nb];
+    [cur, nx].forEach(s => s.style.transition = "transform .22s ease-out");
+    if(goOn){ cur.style.transform = "translateX(" + (dx < 0 ? -w : w) + "px)"; nx.style.transform = "translateX(0)"; }
+    else { cur.style.transform = "translateX(0)"; nx.style.transform = "translateX(" + (dx < 0 ? w : -w) + "px)"; }
+    const target = nb; nb = null; drag = false;
+    setTimeout(() => {
+      [cur, nx].forEach(s => { s.style.transition = ""; s.style.transform = ""; });
+      if(goOn){ page = target; try{ localStorage.setItem("page", page); }catch(e){} }
+      showPage(); render();
+    }, 230);
+  };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+})();
+
+// ============================================================================
+// Home: clock, weather, battery
+// ============================================================================
+function buildClock(){
+  let s = '<circle r="104" fill="#121016" stroke="#34303c" stroke-width="2"/>';
+  for(let i = 0; i < 60; i++){
+    const a = i * Math.PI / 30, big = i % 5 === 0, r0 = big ? 88 : 94, r1 = 100;
+    s += '<line x1="' + (Math.sin(a) * r0).toFixed(1) + '" y1="' + (-Math.cos(a) * r0).toFixed(1) + '" x2="' + (Math.sin(a) * r1).toFixed(1) +
+         '" y2="' + (-Math.cos(a) * r1).toFixed(1) + '" stroke="' + (big ? "#efe9e0" : "#5a5361") + '" stroke-width="' + (big ? 3 : 1.4) + '" stroke-linecap="round"/>';
+  }
+  [["12",0,-66],["3",68,6],["6",0,76],["9",-68,6]].forEach(t => s += '<text x="' + t[1] + '" y="' + t[2] + '" text-anchor="middle" fill="#efe9e0" font-size="20" font-family="inherit">' + t[0] + '</text>');
+  s += '<line id="hh" y1="10" y2="-52" stroke="#efe9e0" stroke-width="7" stroke-linecap="round"/>' +
+       '<line id="mh" y1="14" y2="-80" stroke="#efe9e0" stroke-width="4.5" stroke-linecap="round"/>' +
+       '<line id="sh" y1="18" y2="-88" stroke="#d3a94a" stroke-width="2" stroke-linecap="round"/>' +
+       '<circle r="6" fill="#d3a94a"/><circle r="2.5" fill="#1c1a22"/>';
+  $("clockface").innerHTML = s;
+}
+function tickClock(){
+  const n = new Date(), s = n.getSeconds(), m = n.getMinutes() + s / 60, h = (n.getHours() % 12) + m / 60;
+  $("hh").setAttribute("transform", "rotate(" + h * 30 + ")");
+  $("mh").setAttribute("transform", "rotate(" + m * 6 + ")");
+  $("sh").setAttribute("transform", "rotate(" + s * 6 + ")");
+  $("clock").textContent = String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
+}
+const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Cloudy",45:"Fog",48:"Freezing fog",51:"Drizzle",53:"Drizzle",
+  55:"Heavy drizzle",56:"Freezing drizzle",57:"Freezing drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",
+  67:"Freezing rain",71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",80:"Showers",81:"Showers",82:"Heavy showers",
+  85:"Snow showers",86:"Snow showers",95:"Thunderstorm",96:"Thunder and hail",99:"Thunder and hail"};
+function wxIcon(code, size, night){
+  // the display's weather pictures, drawn in SVG
+  const c = code == null ? 3 : code, sun = c <= 2, cloud = c >= 1, rain = (c >= 51 && c <= 67) || (c >= 80 && c <= 82),
+        snow = (c >= 71 && c <= 77) || c === 85 || c === 86, storm = c >= 95;
+  let s = '<svg viewBox="0 0 60 60" width="' + size + '" height="' + size + '">';
+  if(sun) s += night ? '<path d="M34 12a14 14 0 1 0 12 20 11 11 0 0 1-12-20z" fill="#b8b0c4"/>'
+                     : '<circle cx="' + (cloud ? 24 : 30) + '" cy="' + (cloud ? 22 : 30) + '" r="11" fill="#f5b83d"/>' +
+                       [0,1,2,3,4,5,6,7].map(i => { const a = i * Math.PI / 4, cx = cloud ? 24 : 30, cy = cloud ? 22 : 30;
+                         return '<line x1="' + (cx + Math.cos(a) * 15) + '" y1="' + (cy + Math.sin(a) * 15) + '" x2="' + (cx + Math.cos(a) * 19) + '" y2="' + (cy + Math.sin(a) * 19) + '" stroke="#f5b83d" stroke-width="3" stroke-linecap="round"/>'; }).join("");
+  if(cloud) s += '<path d="M16 44h28a9 9 0 0 0 0-18 13 13 0 0 0-25-2 8 8 0 0 0-3 20z" fill="' + (storm ? "#6b6475" : c >= 3 || rain ? "#a39cad" : "#cfc9d6") + '"/>';
+  if(rain) s += '<path d="M22 49l-2 6M30 49l-2 6M38 49l-2 6" stroke="#58a6ff" stroke-width="2.6" stroke-linecap="round"/>';
+  if(snow) s += '<g fill="#e8f2ff"><circle cx="21" cy="52" r="2.4"/><circle cx="30" cy="54" r="2.4"/><circle cx="39" cy="52" r="2.4"/></g>';
+  if(storm) s += '<path d="M31 45l-5 8h6l-3 7" stroke="#f5b83d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  return s + "</svg>";
+}
+// Where the van is, under the weather while the GPS has a fix: a strip of
+// OpenStreetMap as wide as the card, the van's dot in the middle of it, and
+// its position underneath. The tiles are placed from the middle outwards
+// (50% + an offset), so the dot is centred whatever the screen's width; up to
+// three across and the rows the strip needs. The phone fetches them (the hub
+// never does); with no internet the strip hides itself. Tap for the full map.
+function wxWhere(){
+  const g = D && D.gps;
+  if(!g || !g.fix || g.stale || g.lat == null) return "";
+  const z = 13, n = 1 << z, lat = g.lat * Math.PI / 180;
+  const fx = (g.lon + 180) / 360 * n, fy = (1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2 * n;
+  const tx = Math.floor(fx), ty = Math.floor(fy), px = (fx - tx) * 256, py = (fy - ty) * 256;
+  const rows = [0].concat(py < 60 ? [-1] : []).concat(py > 196 ? [1] : []);
+  let imgs = "";
+  for(const j of rows) for(const i of [-1, 0, 1]){
+    const left = Math.round(i * 256 - px), top = Math.round(j * 256 - py);
+    imgs += '<img alt="" src="https://tile.openstreetmap.org/' + z + "/" + (tx + i) + "/" + (ty + j) + '.png"' +
+      (i === 0 && j === 0 ? ' onerror="this.parentNode.parentNode.style.display=&quot;none&quot;"' : "") +
+      ' style="left:calc(50% + ' + left + 'px);top:calc(50% + ' + top + 'px)">';
+  }
+  return '<div class="wxmap"><a href="https://www.google.com/maps/search/?api=1&query=' + g.lat.toFixed(5) + "," + g.lon.toFixed(5) +
+    '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open the map">' + imgs +
+    '<i></i><b>&copy; OpenStreetMap</b></a><div class="small muted ll">GPS ' + g.lat.toFixed(4) + ", " + g.lon.toFixed(4) + '</div></div>';
+}
+function renderHome(){
+  const w = WX && WX.data, cur = w && w.current, meta = (WX && WX.meta) || {};
+  $("wplace").textContent = meta.place || "";
+  const hr = new Date().getHours(), night = hr < 7 || hr >= 20;
+  if(!cur || cur.temperature_2m == null){
+    $("wbody").innerHTML = '<div class="muted" style="font-size:19px;margin-top:10px">No forecast yet</div><div class="muted small" style="margin-top:6px">The hub fetches it when it is online</div>';
+  } else {
+    const dl = w.daily || {}, hi = (dl.temperature_2m_max || [])[0], lo = (dl.temperature_2m_min || [])[0];
+    $("wbody").innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-top:4px">' + wxIcon(cur.weather_code, 76, night) +
+      '<div><div class="big">' + Math.round(cur.temperature_2m) + '&deg;</div><div style="font-size:18px">' + esc(WMO[cur.weather_code] || "") + '</div></div></div>' +
+      '<div class="muted small">Hi ' + num(hi) + '&deg; Lo ' + num(lo) + '&deg; &middot; ' + num(cur.wind_speed_10m) + ' km/h</div>' + wxWhere();
+  }
+  $("hbatt").innerHTML = battCard(D);
+}
+function battState(d){
+  const cur = d.current || 0;
+  if(cur > 0.05){ const cap = (d.nominal_ah || 0) - (d.residual_ah || 0); return ["Charging", "var(--green)", cap > 0 ? "Full in " + hm(cap / cur) : "Full"]; }
+  if(cur < -0.05) return ["Discharging", "var(--amber)", hm((d.residual_ah || 0) / -cur) + " left"];
+  return ["Resting", "var(--muted)", "No current flowing"];
+}
+function socCol(s){ return s > 50 ? "var(--green)" : s > 20 ? "var(--amber)" : "var(--red)"; }
+function battCard(d){
+  if(!d || !d.connected) return '<div class="battbox">' + battGauge(null) + '<div><div class="pct muted" style="font-size:24px">Offline</div><div class="muted small">Waiting for the BMS</div></div></div>';
+  const st = battState(d);
+  return '<div class="battbox">' + battGauge(d.soc, d.current > 0.05) + '<div><div class="pct">' + d.soc + '%</div><div style="color:' + st[1] + '">' + st[0] + '</div></div></div>' +
+         '<div class="muted small" style="margin-top:6px">' + st[2] + ' &middot; ' + num(d.voltage, 2) + ' V</div>';
+}
+function battGauge(soc, charging){
+  const f = soc == null ? 0 : Math.max(0, Math.min(100, soc)), w = Math.round(84 * f / 100);
+  return '<svg width="110" height="52" viewBox="0 0 110 52"><rect x="2" y="3" width="96" height="46" rx="8" fill="none" stroke="#9a8f9e" stroke-width="3"/>' +
+    '<rect x="100" y="17" width="6" height="18" rx="2" fill="#9a8f9e"/>' +
+    (w > 0 ? '<rect x="8" y="9" width="' + w + '" height="34" rx="4" fill="' + socCol(f) + '"/>' : "") +
+    (charging ? '<path d="M53 11 43 27h10l-4 14 12-18H51z" fill="#efe9e0"/>' : "") + "</svg>";
+}
+function renderForecast(){
+  const w = WX && WX.data;
+  if(!w || !w.hourly){ $("fc12").innerHTML = '<text x="220" y="55" text-anchor="middle" fill="#9a8f9e" font-size="16">No forecast yet</text>'; $("fcdays").innerHTML = ""; return; }
+  const h = w.hourly, nowIso = new Date().toISOString().slice(0, 13);
+  let i0 = (h.time || []).findIndex(t => t.slice(0, 13) >= nowIso); if(i0 < 0) i0 = 0;
+  const T = h.temperature_2m.slice(i0, i0 + 12), P = (h.precipitation_probability || []).slice(i0, i0 + 12), tm = h.time.slice(i0, i0 + 12);
+  const lo = Math.min(...T), hi = Math.max(...T), sp = Math.max(1, hi - lo), X = i => 12 + i * 37, Y = v => 28 + (hi - v) / sp * 34;
+  let s = '<polyline fill="none" stroke="#ff9d3c" stroke-width="2.5" points="' + T.map((v, i) => X(i) + "," + Y(v).toFixed(1)).join(" ") + '"/>';
+  T.forEach((v, i) => { if(i % 3 === 0){ s += '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="3.5" fill="#1c1a22" stroke="#ff9d3c" stroke-width="2"/>' +
+    '<text x="' + X(i) + '" y="' + (Y(v) - 8) + '" text-anchor="middle" fill="#efe9e0" font-size="13">' + Math.round(v) + '&deg;</text>' +
+    '<text x="' + X(i) + '" y="98" text-anchor="middle" fill="#9a8f9e" font-size="12">' + tm[i].slice(11, 13) + '</text>'; }
+    const p = P[i] || 0; s += '<rect x="' + (X(i) - 2.5) + '" y="' + (84 - p / 100 * 14) + '" width="5" height="' + Math.max(2, p / 100 * 14) + '" rx="2" fill="#58a6ff"/>'; });
+  $("fc12").innerHTML = s;
+  const d = w.daily || {}, DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  $("fcdays").innerHTML = [0,1,2].map(k => '<div class="card" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="width:100%;font-weight:600;font-size:18px">' +
+    (k ? DAYS[new Date(d.time[k]).getDay()] : "Today") + '</div>' + wxIcon((d.weather_code || [])[k], 58) +
+    '<div style="margin-left:auto;text-align:right"><div style="font-size:30px;font-weight:700">' + num((d.temperature_2m_max || [])[k]) + '&deg;</div><div class="muted" style="font-size:18px">' +
+    num((d.temperature_2m_min || [])[k]) + '&deg;</div></div></div>').join("");
+}
+
+// ---- kitchen timer and alarm clock: kept on the hub, shared with the display
+function ktLeft(k){ if(k.end) return Math.max(0, Math.round(k.end - hubNow())); return k.paused || k.set; }
+function renderTimer(){
+  const S = D && D.display; if(!S) return;
+  $("ktview").style.display = clockView === "alarm" ? "none" : ""; $("acview").style.display = clockView === "alarm" ? "" : "none";
+  const k = S.kitchen, left = ktLeft(k), done = k.end && left === 0;
+  $("kttime").textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
+  $("kttime").style.color = done ? "var(--red)" : k.end ? "var(--brand)" : k.paused ? "var(--amber)" : "";
+  $("ktstate").textContent = done ? "Time’s up" : k.end ? "Running" : k.paused ? "Paused" : "Set the time";
+  $("ktgo").textContent = k.end && !done ? "Pause" : k.paused ? "Resume" : "Start";
+  const ac = S.alarm_clock;
+  $("actime").textContent = ac.at; $("actime").style.color = ac.on ? "var(--brand)" : "var(--muted)";
+  $("acdays").textContent = {every:"Every day", weekdays:"Weekdays", weekends:"Weekends"}[ac.days] || "Every day";
+  $("acwarm").innerHTML = ic("flame") + (ac.warm ? "Warm " + ac.warm + " min" : "No warm-up");
+  $("acwarm").classList.toggle("hot", !!ac.warm);
+  $("acon").innerHTML = ic("alarm") + (ac.on ? "Alarm on" : "Alarm off"); $("acon").classList.toggle("lit", !!ac.on);
+  const wk = D.wake || {};
+  $("acnote").textContent = !ac.on ? "Off" : "Rings at " + ac.at + (ac.warm && wk.at ? " · heater at " + wk.at : "");
+}
+document.querySelectorAll("[data-kt]").forEach(b => b.onclick = () => {
+  const k = D.display.kitchen, n = +b.dataset.kt;
+  if(k.end) share({kitchen:{end: Math.max(Math.round(hubNow()) + 1, k.end + n)}});
+  else if(k.paused) share({kitchen:{paused: Math.max(10, k.paused + n)}});
+  else share({kitchen:{set: Math.max(10, Math.min(5999, k.set + n))}});
+});
+$("ktgo").onclick = () => { const k = D.display.kitchen, left = ktLeft(k);
+  if(k.end && left > 0) share({kitchen:{end:0, paused:left}}); else share({kitchen:{left: k.paused || k.set}}); };
+$("ktreset").onclick = () => share({kitchen:{end:0, paused:0}});
+document.querySelectorAll("[data-ac]").forEach(b => b.onclick = () => {
+  const ac = D.display.alarm_clock, p = ac.at.split(":"), m = (+p[0] * 60 + +p[1] + +b.dataset.ac + 1440) % 1440;
+  share({alarm_clock:{at: String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"), on:true}});
+});
+$("acdays").onclick = () => { const o = ["every","weekdays","weekends"], i = o.indexOf(D.display.alarm_clock.days);
+  share({alarm_clock:{days: o[(i + 1) % 3]}}); };
+$("acwarm").onclick = () => { const m = {0:15,15:30,30:45,45:60}; share({alarm_clock:{warm: m[D.display.alarm_clock.warm || 0] || 0}}); };
+$("acon").onclick = () => share({alarm_clock:{on: !D.display.alarm_clock.on}});
+
+// ============================================================================
+// Power: the flow, the figures, the day, the battery, the lights
+// ============================================================================
+// The same diagram in two shapes: the display's, wide; and upright for a
+// phone held portrait, where the wide one would be a strip across the middle.
+const FLOWS = {
+  wide: {vb:"0 36 480 242", nw:118, ts:15, vs:18, ss:14,
+    nodes:{solar:[8,44], alt:[8,121], mains:[8,198], load:[354,60], starter:[354,183]},
+    edges:{solar:"M126 80C152 80 152 118 178 118", alt:"M126 157L178 157", mains:"M126 234C152 234 152 196 178 196",
+           load:"M302 118C328 118 328 96 354 96", starter:"M302 196C328 196 328 219 354 219"},
+    b:{x:178, y:53, w:124, h:213}},
+  tall: {vb:"0 0 300 452", nw:92, ts:13, vs:16, ss:12,
+    nodes:{solar:[4,8], alt:[104,8], mains:[204,8], load:[40,373], starter:[168,373]},
+    edges:{solar:"M50 79C50 104 112 102 112 126", alt:"M150 79L150 115", mains:"M250 79C250 104 188 102 188 126",
+           load:"M125 339C125 356 86 356 86 373", starter:"M175 339C175 356 214 356 214 373"},
+    b:{x:88, y:126, w:124, h:213}}
+};
+let flowMode = null, G = FLOWS.wide;
+function buildFlow(){
+  const want = $("pages").clientWidth < 560 ? "tall" : "wide";
+  if(want === flowMode) return;
+  flowMode = want; G = FLOWS[want];
+  const B = G.b, cx = B.x + B.w / 2;
+  $("flow").setAttribute("viewBox", G.vb);
+  let s = '<defs>';
+  ["green","amber","blue","line"].forEach(c => s += '<marker id="ah-' + c + '" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 8 4 0 8z" fill="' +
+    {green:"#2b6e36", amber:"#7a5a17", blue:"#355f8f", line:"#34303c"}[c] + '"/></marker>');
+  s += '<clipPath id="bclip"><rect x="' + (B.x + 7) + '" y="' + (B.y + 7) + '" width="' + (B.w - 14) + '" height="' + (B.h - 14) + '" rx="9"/></clipPath></defs>';
+  for(const k in G.edges) s += '<path id="e-' + k + '" class="trk" d="' + G.edges[k] + '"/><path id="d-' + k + '" class="flowdots" d="' + G.edges[k] + '" style="display:none"/>';
+  const node = (id, icon, title) => { const x = G.nodes[id][0], y = G.nodes[id][1];
+    return '<g id="n-' + id + '"><rect x="' + x + '" y="' + y + '" width="' + G.nw + '" height="71" rx="14" fill="#1c1a22"/>' +
+    '<use href="#i-' + icon + '" x="' + (x + 9) + '" y="' + (y + 7) + '" width="18" height="18" class="nic" style="fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"/>' +
+    '<text x="' + (x + 32) + '" y="' + (y + 21) + '" class="nt" font-size="' + G.ts + '">' + title + '</text>' +
+    '<text x="' + (x + 9) + '" y="' + (y + 46) + '" class="nv" font-weight="600" font-size="' + G.vs + '">–</text>' +
+    '<text x="' + (x + 9) + '" y="' + (y + 63) + '" class="m ns" font-size="' + G.ss + '"></text></g>'; };
+  s += node("solar", "sun", "Solar") + node("alt", "engine", "Alternator") + node("mains", "plug", "Mains") +
+       node("load", "bulb", "Loads") + node("starter", "battery", "Starter");
+  // the battery: the whole of it is the gauge
+  const t = y => '" y="' + (B.y + y) + '"';
+  s += '<g id="fbatt" style="cursor:pointer" onclick="subview(\'power\',\'details\')"><rect x="' + (cx - 20) + '" y="' + (B.y - 9) + '" width="40" height="12" rx="3" id="bcap"/>' +
+       '<rect x="' + B.x + '" y="' + B.y + '" width="' + B.w + '" height="' + B.h + '" rx="14" id="brim"/><rect x="' + (B.x + 3) + '" y="' + (B.y + 3) + '" width="' + (B.w - 6) + '" height="' + (B.h - 6) + '" rx="12" fill="#1c1a22"/>' +
+       '<g clip-path="url(#bclip)"><rect id="bfill" x="' + (B.x + 7) + '" y="0" width="' + (B.w - 14) + '" height="0"/><rect id="bsurf" x="' + (B.x + 9) + '" y="0" width="' + (B.w - 18) + '" height="2"/></g>' +
+       '<path id="bbolt" d="M' + (cx + 3) + ' ' + (B.y + 15) + 'l-10 16h10l-4 14 12-18h-10z" fill="#3fb950" style="display:none"/>' +
+       '<text x="' + cx + t(77) + ' text-anchor="middle" id="bsoc" font-size="46" font-weight="700">–</text>' +
+       '<text x="' + cx + t(107) + ' text-anchor="middle" id="bv" class="m">–</text>' +
+       '<text x="' + cx + t(139) + ' text-anchor="middle" id="bnet" font-size="28" font-weight="700"></text>' +
+       '<text x="' + cx + t(169) + ' text-anchor="middle" id="bwhen"></text></g>';
+  $("flow").innerHTML = s;
+}
+function flowSpeed(w){ return 52 / Math.max(0.35, Math.min(2.4, 160 / Math.max(w, 6))); }
+function setNode(id, on, col, v, sub){
+  const g = $("n-" + id); g.querySelector(".nic").style.stroke = on ? col : "#9a8f9e";
+  g.querySelector(".nt").style.fill = on ? "#efe9e0" : "#9a8f9e";
+  g.querySelector(".nv").textContent = v; g.querySelector(".nv").style.fill = on ? "#efe9e0" : "#9a8f9e";
+  g.querySelector(".ns").textContent = sub;
+}
+function setEdge(k, watts, col, dim){
+  const on = watts > 0.5, e = $("e-" + k), d = $("d-" + k);
+  e.style.stroke = on ? dim : "#34303c"; e.setAttribute("marker-end", "url(#ah-" + (on ? {"#3fb950":"green","#d29922":"amber","#58a6ff":"blue"}[col] : "line") + ")");
+  if(on && k !== "starter"){ d.style.display = ""; d.style.stroke = col; d.style.animationDuration = (14 / flowSpeed(watts)).toFixed(2) + "s"; }
+  else d.style.display = "none";
+}
+function renderFlow(){
+  const d = D || {}, r = d.renogy || {}, v = d.victron || {}, der = d.derived || {}, st = d.stats || {};
+  const rok = !!r.connected, vok = !!v.connected, bok = !!d.connected;
+  const solar = rok ? r.solar_w || 0 : 0, alt = rok ? r.alt_w || 0 : 0, mains = vok ? v.power_w || 0 : 0, load = der.load_w;
+  const engine = "engine" in d ? !!d.engine : false, W = w => Math.round(w || 0) + " W";
+  const sa = r.solar_a || 0, sv = r.solar_v || 0;
+  setNode("solar", solar > 0.5, "#d3a94a", rok ? W(solar) : "–", !rok ? "Offline" : sa > 0.05 ? sa.toFixed(1) + " A · " + Math.round(sv) + " V" : solar > 0.5 ? (sv ? sv.toFixed(1) + " V" : "Charging") : sv > 5 ? "Low sun" : "No sun");
+  setNode("alt", alt > 0.5 || engine, "#39d3c3", rok ? W(alt) : "–", !rok ? "Offline" : alt > 0.5 ? (r.alt_a || 0).toFixed(1) + " A" : engine ? "Engine on" : "Engine off");
+  setNode("mains", mains > 0.5, "#58a6ff", vok ? W(mains) : "–", vok ? (v.current || 0).toFixed(1) + " A" : (v.stale ? "Unplugged" : "Offline"));
+  setNode("load", (load || 0) > 0.5, "#d29922", load != null ? W(load) : "–", load != null ? (der.load_a || 0).toFixed(1) + " A" : "");
+  setNode("starter", engine, "#58a6ff", rok ? (r.alt_v || 0).toFixed(1) + " V" : "–", !rok ? "Offline" : engine ? "Engine running" : "Resting");
+  setEdge("solar", solar, "#3fb950", "#2b6e36"); setEdge("alt", alt, "#3fb950", "#2b6e36"); setEdge("mains", mains, "#3fb950", "#2b6e36");
+  setEdge("load", load || 0, "#d29922", "#7a5a17"); setEdge("starter", engine ? 1 : 0, "#58a6ff", "#355f8f");
+  const soc = bok ? d.soc : null, pct = Math.max(0, Math.min(100, soc || 0)), col = pct > 50 ? "#3fb950" : pct > 20 ? "#d29922" : "#f85149";
+  const B = G.b, full = B.h - 14, fh = soc == null ? 0 : Math.round(full * pct / 100), top = B.y + B.h - 7 - fh;
+  $("brim").setAttribute("fill", bok ? "#9a8f9e" : "#34303c"); $("bcap").setAttribute("fill", bok ? "#9a8f9e" : "#34303c");
+  $("bfill").setAttribute("y", top); $("bfill").setAttribute("height", fh); $("bfill").setAttribute("fill", col); $("bfill").setAttribute("fill-opacity", ".72");
+  $("bsurf").setAttribute("y", top); $("bsurf").setAttribute("fill", col); $("bsurf").style.display = fh > 0 && fh < full ? "" : "none";
+  $("bsoc").textContent = soc == null ? (bok ? "–" : "") : pct + "%";
+  $("bv").textContent = bok ? num(d.voltage, 2) + " V" : "Offline";
+  const p = d.power_w || 0; let net = "0 W", when = pct >= 100 ? "Full" : "Resting";
+  if(p > 0.5){ net = "+" + Math.round(p) + " W"; when = pct >= 100 ? "Full" : st.time_to_full_h != null ? "Full in " + hm(st.time_to_full_h) : "Charging"; }
+  else if(p < -0.5){ net = "–" + Math.round(-p) + " W"; when = st.time_to_empty_h != null ? hm(st.time_to_empty_h) + " left" : "Discharging"; }
+  $("bnet").textContent = bok ? net : ""; $("bnet").setAttribute("font-size", net.length > 6 ? 22 : 28);
+  $("bwhen").textContent = bok ? when : "";
+  // a slow charge makes a long wait, and "Full in 23 h 54 m" fills the battery
+  // edge to edge: tighten the wording until it fits, as the van display does
+  if(bok && (p > 0.5 || p < -0.5)){
+    const hrs = p > 0.5 ? st.time_to_full_h : st.time_to_empty_h;
+    if(hrs != null && pct < 100){
+      const t = hmShort(hrs);
+      const opts = p > 0.5 ? ["Full in " + t, "Full " + t, "Charging"] : [t + " left", t, "Discharging"];
+      for(let i = 0; i < opts.length && $("bwhen").getComputedTextLength() > B.w - 24; i++) $("bwhen").textContent = opts[i];
+    }
+  }
+  $("bbolt").style.display = bok && (d.current || 0) > 0.05 ? "" : "none";
+  ["bsoc","bnet","bwhen","bv"].forEach(id => $(id).style.fill = "#efe9e0");
+}
+function renderDetails(){
+  const d = D || {}, r = d.renogy || {}, v = d.victron || {}, der = d.derived || {};
+  if(!d.connected) $("pdbatt").innerHTML = '<div class="muted" style="font-size:19px;margin-top:14px">Not connected</div>';
+  else { const st = battState(d);
+    $("pdbatt").innerHTML = '<div style="font-size:84px;font-weight:700;line-height:1.05">' + d.soc + '<span class="muted" style="font-size:36px">%</span></div>' +
+      '<div style="height:12px;background:var(--panel2);border-radius:6px;margin:10px 0"><div style="height:12px;border-radius:6px;width:' + d.soc + '%;background:' + socCol(d.soc) + '"></div></div>' +
+      '<div style="font-weight:600;font-size:18px;color:' + st[1] + '">' + st[0] + '</div><div class="muted">' + st[2] + '</div>' +
+      '<div style="font-size:18px;margin-top:6px">' + num(d.voltage, 2) + ' V &nbsp; ' + (d.current > 0 ? "+" : "") + num(d.current, 1) + ' A</div>'; }
+  const tile = (l, ok, w, col, s) => '<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:17px">' + l +
+    '</div><div class="muted small">' + (ok ? esc(s) : "Not connected") + '</div></div><div style="font-size:30px;font-weight:700;color:' + (ok && (w || 0) >= 1 ? col : "var(--muted)") + '">' +
+    (ok ? Math.round(w || 0) + '<span class="muted" style="font-size:16px"> W</span>' : "–") + '</div></div>';
+  $("pdtiles").innerHTML = tile("Solar", r.connected, r.solar_w, "var(--brand)", num(r.solar_v, 1) + " V") + tile("Alternator", r.connected, r.alt_w, "var(--cyan)", num(r.alt_v, 1) + " V") +
+    tile("Mains", v.connected, v.power_w, "var(--blue)", v.state || "") + tile("Load", der.load_w != null, der.load_w, "var(--txt)", num(der.load_a, 1) + " A");
+}
+let history = null, histAt = 0;
+async function loadHistory(){
+  if(Date.now() - histAt < 300000 && history) return renderDay();
+  try{ const cut = Math.round(hubNow() - 86400);
+    history = (await (await fetch("/api/history/long?since=" + cut)).json()).filter(r => r && r[0] >= cut); histAt = Date.now(); }
+  catch(e){ history = history || []; }
+  renderDay();
+}
+function renderDay(){
+  const rows = history || [], svg = $("daychart"), now = hubNow();
+  let s = '<line x1="30" y1="10" x2="440" y2="10" stroke="#34303c"/><line x1="30" y1="75" x2="440" y2="75" stroke="#34303c"/><line x1="30" y1="140" x2="440" y2="140" stroke="#34303c"/>' +
+          '<text x="0" y="14" fill="#9a8f9e" font-size="11">100%</text><text x="4" y="79" fill="#9a8f9e" font-size="11">50%</text><text x="10" y="144" fill="#9a8f9e" font-size="11">0%</text>';
+  if(rows.length > 1){
+    const X = t => 30 + (t - (now - 86400)) / 86400 * 410, Y = soc => 140 - soc / 100 * 130;
+    s += '<polyline fill="none" stroke="#3fb950" stroke-width="2" points="' + rows.map(r => X(r[0]).toFixed(1) + "," + Y(r[3]).toFixed(1)).join(" ") + '"/>';
+  } else s += '<text x="235" y="80" text-anchor="middle" fill="#9a8f9e" font-size="15">No history yet</text>';
+  svg.innerHTML = s;
+  const t = (D && D.today) || {};
+  $("today").innerHTML = [["Solar", t.solar],["Alternator", t.alt],["Mains", t.mains],["Used", t.load]].map(p =>
+    '<div><div class="muted small">' + p[0] + '</div><div style="font-weight:700;font-size:20px">' + (p[1] == null ? "–" : p[1] + " Wh") + '</div></div>').join("");
+}
+function renderBattery(){
+  const d = D || {};
+  if(!d.connected){ $("battpage").innerHTML = '<div class="card" style="grid-column:1/-1;display:flex;flex-direction:column;justify-content:center;align-items:center"><div style="font-size:26px;font-weight:700" class="muted">Battery not connected</div><div class="muted">Waiting for the BMS</div></div>'; return; }
+  const cells = d.cells_mv || [], spread = d.cell_delta_mv, lo = Math.min(...cells), st = d.storage || {};
+  let c = '<div class="card"><div style="display:flex;justify-content:space-between"><span class="lab">Cells</span><span class="small" style="color:' +
+    (spread > 100 ? "var(--amber)" : "var(--green)") + '">spread ' + (spread == null ? "–" : spread + " mV") + '</span></div>';
+  cells.forEach((mv, i) => c += '<div style="display:flex;align-items:center;gap:12px;margin-top:14px"><span class="muted">' + (i + 1) + '</span><b class="num" style="font-size:18px;width:78px">' +
+    (mv / 1000).toFixed(3) + ' V</b><div style="flex:1;height:10px;background:var(--panel2);border-radius:5px"><div style="height:10px;border-radius:5px;background:var(--green);width:' +
+    Math.max(4, Math.min(100, (mv - 3000) / 6)) + '%"></div></div></div>');
+  c += '</div>';
+  const temps = d.temps_c || [];
+  c += '<div class="card"><span class="lab">Pack</span>' +
+    '<div class="muted small" style="margin-top:10px">Charge</div><div style="font-weight:600;font-size:18px">' + num(d.residual_ah, 1) + ' / ' + num(d.nominal_ah) + ' Ah</div>' +
+    '<div class="muted small" style="margin-top:8px">Temp &middot; ' + (d.cycles == null ? "–" : d.cycles) + ' cycles</div><div style="font-weight:600;font-size:18px">' + (temps.length ? temps.map(t => t + "°").join(" / ") : "–") + '</div>' +
+    '<div class="muted small" style="margin-top:8px">Storage mode' + (st.holding ? " · holding" : "") + '</div>' +
+    '<div style="display:flex;gap:10px;align-items:center;margin-top:4px"><button class="btn' + (st.on ? " lit" : "") + '" style="min-height:34px;font-size:15px" onclick="storage({on:' + !st.on + '})">' + (st.on ? "On" : "Off") + '</button>' +
+    '<span class="step"><button onclick="storage({target:' + Math.max(30, (st.target || 80) - 5) + '})">' + ic("minus") + '</button><b>' + (st.target || 80) + '%</b><button onclick="storage({target:' + Math.min(95, (st.target || 80) + 5) + '})">' + ic("plus") + '</button></span></div>' +
+    '<div style="margin-top:12px;display:flex;gap:16px"><span><span class="dot" style="background:' + (d.charge_fet ? "var(--green)" : "var(--red)") + '"></span> Charge</span>' +
+    '<span><span class="dot" style="background:' + (d.discharge_fet ? "var(--green)" : "var(--red)") + '"></span> Discharge</span></div></div>';
+  $("battpage").innerHTML = c;
+}
+async function storage(body){ try{ const r = await post("/api/storage", body); if(D && r.storage) D.storage = r.storage; renderBattery(); } catch(e){ toast("Storage mode: " + e.message); } }
+
+// ---- lights and security
+function hsvHex(h, s){ s /= 100; const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (1 - s * Math.max(0, Math.min(k, 4 - k, 1)))); };
+  return "#" + [f(5), f(3), f(1)].map(v => v.toString(16).padStart(2, "0")).join(""); }
+function renderLights(){
+  const S = D && D.display; if(!S) return; const am = S.ambient;
+  $("wheel").classList.toggle("off", !am.on);
+  const a = am.h * Math.PI / 180, r = 75 * am.s / 100;
+  $("wmark").style.left = (75 + Math.sin(a) * r) + "px"; $("wmark").style.top = (75 - Math.cos(a) * r) + "px";
+  $("wmark").style.display = am.warm && !am.cycle ? "none" : ""; $("wmark").style.background = hsvHex(am.h, am.s);
+  $("amon").textContent = am.on ? "On" : "Off"; $("amon").classList.toggle("lit", !!am.on);
+  $("amcyc").classList.toggle("lit", !!am.cycle); $("amwarm").classList.toggle("hot", !!(am.warm && !am.cycle));
+  $("ambv").textContent = am.bright + "%";
+  const g = D.guard || {}, st = g.on ? g.state : "off";
+  const L = {off:["Guard off",""], arming:["Arming " + (g.arming_s || 0) + "s","hot"], armed:["Guarding","go"], tripped:["Guard alarm","danger"]}[st] || ["Guard off",""];
+  $("guardbtn").textContent = L[0]; $("guardbtn").className = "btn " + L[1];
+  $("guardnote").textContent = g.last || "";
+  const led = S.status_led !== false;
+  $("ledbtn").textContent = led ? "Status light on" : "Status light off"; $("ledbtn").classList.toggle("lit", led);
+}
+$("ledbtn").onclick = () => share({status_led: D.display.status_led === false});
+$("wheel").onclick = e => { const b = $("wheel").getBoundingClientRect(), k = 75 / (b.width / 2),
+  dx = (e.clientX - b.left) * k - 75, dy = (e.clientY - b.top) * k - 75;
+  share({ambient:{h: Math.round((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360), s: Math.min(100, Math.round(Math.hypot(dx, dy) / 75 * 100)), warm:false, cycle:false, on:true}}); };
+$("amon").onclick = () => share({ambient:{on: !D.display.ambient.on}});
+$("amcyc").onclick = () => share({ambient:{cycle: !D.display.ambient.cycle, on:true}});
+$("amwarm").onclick = () => share({ambient:{warm:true, cycle:false, on:true}});
+document.querySelectorAll("[data-ab]").forEach(b => b.onclick = () => share({ambient:{bright: Math.max(10, Math.min(100, D.display.ambient.bright + +b.dataset.ab))}}));
+$("guardbtn").onclick = async () => { try{ const r = await post("/api/guard", {on: !(D.guard || {}).on}); D.guard = r.guard; renderLights(); } catch(e){ toast("Guard: " + e.message); } };
+(function(){                              // Panic: held for a second, like the display's
+  const b = $("panicbtn"); let t0 = 0, raf = 0;
+  const stop = () => { cancelAnimationFrame(raf); t0 = 0; b.style.setProperty("--p", "0%"); };
+  const tick = () => { const p = Math.min(1, (Date.now() - t0) / 900); b.style.setProperty("--p", p * 100 + "%");
+    if(p >= 1){ stop(); post("/api/panic", {on:true, by:"a phone"}).then(r => window.showAlerts && showAlerts(r.alerts)).catch(e => toast("Panic: " + e.message)); }
+    else raf = requestAnimationFrame(tick); };
+  b.addEventListener("pointerdown", e => { e.preventDefault(); t0 = Date.now(); tick(); });
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => b.addEventListener(ev, stop));
+})();
+
+// ============================================================================
+// Heater: the diagram, the dial, the controls, the schedule
+// ============================================================================
+const HEAT_SCENE = {3:["burn","air","water"], 4:["burn","air"], 5:["burn","water"], 6:["vent"], 7:["burn"], 8:["air"]};
+const HEAT_CAPTION = {3:"Hot water and warm air", 4:"Warm air to the cabin", 5:"Heating the water tank", 6:"Fan only, no flame",
+                      7:"Priming the fuel line", 8:"Shutting down, fan cooling", 10:"Standby, everything off"};
+const WATERL = {1:"40°C", 2:"60°C", 3:"Boost"};
+function heater(){ return (D && D.heater) || {}; }
+function tgt(){ if(target == null){ const s = heater().set_air_c; target = s && s >= 5 && s <= 35 ? s : 20; } return target; }
+function renderHeaterDiagram(){
+  const h = heater(), have = h.connected || h.remembered, code = have ? h.mode_code : null, parts = have ? HEAT_SCENE[code] || [] : [];
+  const e = h.energy_code || 0, burn = parts.includes("burn") && e < 3, elec = parts.includes("burn") && e >= 1,
+        fan = parts.includes("air") || parts.includes("vent"), wat = parts.includes("water"), air = parts.includes("air") ? "#ff9d3c" : "#39d3c3";
+  const lvl = h.fan_level || 1, wt = have ? h.water_temp_c : null, cab = have ? h.air_temp_c : null, wc = h.water_code;
+  const level = wat ? ({1:.55, 2:.7, 3:.85}[wc] || .6) : .45, wh = Math.round(76 * level);
+  const on = !!(have && h.on), tg = {1:40, 2:60}[wc];
+  const sub = !wat ? "" : (tg && wt != null && wt >= tg) ? "Ready" : "Heating";
+  let cap = have ? (HEAT_CAPTION[code] || (on ? "Running" : "Standby")) : "Not read yet: tap ↻";
+  if(busy) cap = busy; else if(result && Date.now() - resultAt < 60000) cap = result;
+  if(cap.length > 30) cap = cap.startsWith("Failed") ? "Failed \u2013 see below" : cap.slice(0, 29) + "\u2026";
+  const card = (x, y, w, h2) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h2 + '" rx="14" fill="#1c1a22"/>';
+  let s = card(8, 44, 92, 190) + '<text x="54" y="62" text-anchor="middle" class="m">Heater</text>';
+  if(burn || elec) s += '<circle cx="54" cy="124" r="38" fill="#ff9d3c" opacity=".2"/>';
+  s += '<circle cx="54" cy="123" r="31" fill="#34303c"/><circle cx="54" cy="123" r="29" fill="#0d0c10"/>';
+  if(burn) s += '<g class="flame"><path d="M54 149C43 149 37 140 38 128 39 118 47 111 52 102L54 95C58 104 62 110 66 119 70 128 68 146 54 149Z" fill="#ff9d3c"/>' +
+                '<path d="M54 147C48 145 46 138 47 131 48 125 52 120 54 114 57 121 61 126 61 133 61 141 58 146 54 147Z" fill="#ffd9a8"/></g>';
+  if(elec) s += '<path class="elem" d="M36 142h6l4-8 5 16 5-16 5 16 5-16 4 8" fill="none" stroke="#ff6a3d" stroke-width="3" stroke-linejoin="round"/>';
+  if(!(burn || elec)) s += '<circle cx="54" cy="132" r="4" fill="#5a5361"/>';
+  s += '<text x="54" y="176" text-anchor="middle" style="fill:' + (burn || elec ? "#ff9d3c" : "#9a8f9e") + '">' + (burn ? "Burning" : elec ? "Electric" : have ? "Burner off" : "Not read") + '</text>' +
+       '<text x="54" y="198" text-anchor="middle" style="fill:' + (fan ? "#efe9e0" : "#9a8f9e") + '">' + (fan ? "Fan " + lvl : "Fan off") + '</text>' +
+       '<rect x="50" y="234" width="8" height="10" fill="#34303c"/>';
+  if(burn) s += [0,1,2].map(i => '<circle class="puff" cx="54" cy="250" r="5" fill="#9a8f9e" style="animation-delay:' + (i * .47) + 's"/>').join("");
+  // water: pipe, tank, pipe, hot water
+  const pipe = (x0, x1, y, live, col) => '<line x1="' + x0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="' + (live ? "#6b4a2a" : "#34303c") + '" stroke-width="6"/>' +
+    (live ? '<line class="pipe" x1="' + x0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="' + col + '"/>' : "");
+  s += pipe(100, 126, 84, wat, "#ff9d3c") + pipe(196, 216, 84, wat, "#ff9d3c");
+  s += card(126, 44, 70, 86) + '<rect x="131" y="' + (126 - wh) + '" width="60" height="' + wh + '" fill="#2f5f96"/><rect x="131" y="' + (126 - wh) + '" width="60" height="2" fill="#58a6ff"/>';
+  if(wat) s += [0,1,2,3,4].map(i => '<circle class="bub" cx="' + (139 + i * 11) + '" cy="122" r="' + (2 + i % 2) + '" fill="#cfe4ff" style="animation-delay:' + (i * .33) + 's"/>').join("");
+  s += '<text x="161" y="67" text-anchor="middle" font-size="18">' + (wt != null ? Math.round(wt) + "°" : "–") + '</text>' +
+       card(216, 44, 76, 86) + '<text x="224" y="63" class="m">Water</text><text x="224" y="88" class="b" style="fill:' + (wat ? "#efe9e0" : "#9a8f9e") + '">' +
+       (wat ? WATERL[wc] || "On" : "Off") + '</text><text x="224" y="112" style="fill:' + (sub === "Heating" ? "#ff9d3c" : "#9a8f9e") + '">' + sub + '</text>';
+  s += '<text x="196" y="147" text-anchor="middle" class="m" font-size="14">' + esc(cap) + '</text>';
+  // air: pipe, fan, pipe, cabin
+  s += pipe(100, 126, 194, fan, air) + pipe(174, 190, 194, fan, air) + '<circle cx="150" cy="194" r="25" fill="#34303c"/><circle cx="150" cy="194" r="23" fill="#0d0c10"/>';
+  const blades = [0,1,2,3].map(i => '<path d="M150 194 L150 174 A20 20 0 0 1 160 177 Z" fill="#b5acbd" transform="rotate(' + i * 90 + ' 150 194)"/>').join("") + '<circle cx="150" cy="194" r="4" fill="#b5acbd"/>';
+  s += fan ? '<g class="fan" style="animation-duration:' + (6.28 / (2 + lvl)).toFixed(2) + 's">' + blades + '</g>' : blades;
+  s += card(190, 156, 102, 78) + '<text x="198" y="175" class="m">Cabin</text><text x="198" y="208" font-size="30" font-weight="700">' + (cab != null ? Math.round(cab) + "°" : "–") + '</text>' +
+       '<text x="198" y="226" class="m" font-size="14">' + (on && h.set_air_c ? "to " + h.set_air_c + "°" : "at the heater") + '</text>';
+  const html = s; if($("hdia").dataset.k !== html){ $("hdia").innerHTML = html; $("hdia").dataset.k = html; }
+}
+function renderHeaterDial(){
+  const h = heater(), have = h.connected || h.remembered, on = !!(have && h.on), t = tgt();
+  const cx = 146, cy = 150, R = 104, th = 16, r0 = R - th, TMIN = 5, TMAX = 35, SW = 270;
+  const ang = v => (-SW / 2 + Math.max(0, Math.min(1, (v - TMIN) / (TMAX - TMIN))) * SW) * Math.PI / 180;
+  const pt = (a, r) => [cx + Math.sin(a) * r, cy - Math.cos(a) * r];
+  const arc = (a0, a1, r, col, w) => { const p0 = pt(a0, r), p1 = pt(a1, r), large = a1 - a0 > Math.PI ? 1 : 0;
+    return '<path d="M' + p0[0].toFixed(1) + " " + p0[1].toFixed(1) + " A" + r + " " + r + " 0 " + large + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"/>'; };
+  const rm = r0 + th / 2, a0 = ang(TMIN), a1 = ang(TMAX), ta = ang(t);
+  let s = arc(a0, a1, rm, "#27242e", th);
+  if(on) s += arc(a0, ta, rm, "#ff9d3c", th + 12).replace('stroke="#ff9d3c"', 'stroke="#ff9d3c" opacity=".16"');
+  const n = 14;
+  for(let i = 0; i < n; i++){ const s0 = a0 + (ta - a0) * i / n, s1 = Math.min(ta, a0 + (ta - a0) * (i + 1.1) / n);
+    const k = i / (n - 1), c0 = on ? [210,153,34] : [124,98,52], c1 = on ? [255,106,61] : [144,84,66];
+    if(s1 > s0) s += arc(s0, s1, rm, "rgb(" + c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(",") + ")", th); }
+  const kp = pt(ta, rm);
+  s += '<circle cx="' + kp[0] + '" cy="' + (kp[1] + 3) + '" r="14" fill="#000" opacity=".45"/><circle cx="' + kp[0] + '" cy="' + kp[1] + '" r="14" fill="#efe9e0"/><circle cx="' + kp[0] + '" cy="' + kp[1] + '" r="8" fill="' + (on ? "#ff6a3d" : "#905442") + '"/>';
+  const cab = have ? h.air_temp_c : null;
+  if(cab != null){ const ca = ang(cab), q0 = pt(ca, r0 - 14), q1 = pt(ca, r0 - 5); s += '<line x1="' + q0[0] + '" y1="' + q0[1] + '" x2="' + q1[0] + '" y2="' + q1[1] + '" stroke="#efe9e0" stroke-width="3" stroke-linecap="round"/>'; }
+  s += '<text x="' + cx + '" y="' + (cy - 50) + '" text-anchor="middle" class="m" font-size="13" letter-spacing="1">' + (on ? "HEATING TO" : "SET TO") + '</text>' +
+       '<text x="' + (cx - 6) + '" y="' + (cy + 24) + '" text-anchor="middle" font-size="76" font-weight="700">' + t + '<tspan font-size="34" class="m" dy="-34">°</tspan></text>';
+  const state = !have ? ["Not read yet", "#9a8f9e"] : h.fault ? ["Fault E" + (h.error_code || "?"), "#f85149"] : on ? ["Heating · " + (h.mode || "on"), "#ff9d3c"] : ["Off", "#9a8f9e"];
+  s += '<text x="' + cx + '" y="' + (cy + 54) + '" text-anchor="middle" style="fill:' + state[1] + '">' + esc(state[0]) + '</text>';
+  if(cab != null) s += '<text x="' + cx + '" y="' + (cy + 76) + '" text-anchor="middle" class="m">Cabin ' + Math.round(cab) + '°</text>';
+  $("hdial").innerHTML = s;
+}
+(function(){                        // drag round the dial to set the target
+  const svg = $("hdial"); let down = false;
+  const set = e => { const b = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, k = vb.width / b.width;
+    const x = (e.clientX - b.left) * k + vb.x - 146, y = (e.clientY - b.top) * k + vb.y - 150;
+    if(Math.hypot(x, y) < 55) return;
+    const f = (Math.atan2(x, -y) * 180 / Math.PI + 135) / 270; if(f < -0.05 || f > 1.05) return;
+    const v = Math.round(5 + Math.max(0, Math.min(1, f)) * 30); if(v !== target){ target = v; renderHeater(); } };
+  svg.addEventListener("pointerdown", e => { down = true; svg.setPointerCapture(e.pointerId); set(e); });
+  svg.addEventListener("pointermove", e => { if(down) set(e); });
+  ["pointerup","pointercancel"].forEach(ev => svg.addEventListener(ev, () => down = false));
+})();
+function heaterMode(h){ if(!h.on) return null; return {4:"air", 3:"combi", 5:"water", 6:"vent"}[h.mode_code]; }
+// the fan speed the next command carries: the one picked here, else the heater's own
+let fanSel = null;
+function fanLvl(){ if(fanSel) return fanSel; const f = heater().fan_level || 1; return f >= 1 && f <= 4 ? f : 1; }
+document.querySelectorAll("[data-fan]").forEach(b => b.onclick = () => { if(busy) return; fanSel = +b.dataset.fan; renderHeater(); });
+function renderHeater(){
+  const h = heater(), running = heaterMode(h);
+  $("hdia").style.display = heaterView === "flow" ? "" : "none"; $("hdial").style.display = heaterView === "flow" ? "none" : "";
+  if(heaterView === "flow") renderHeaterDiagram(); else renderHeaterDial();
+  document.querySelectorAll("[data-heat]").forEach(b => { const a = b.dataset.heat;
+    b.disabled = !!busy; if(a === "air" || a === "combi" || a === "water" || a === "vent") b.classList.toggle("hot", running === a); });
+  document.querySelectorAll("[data-fan]").forEach(b => { b.disabled = !!busy; b.classList.toggle("hot", +b.dataset.fan === fanLvl()); });
+  $("hwater").querySelector("span").textContent = WATERL[water]; $("hwater").disabled = !!busy;
+  $("ttarget").textContent = tgt() + "°";
+  const at = h.at ? new Date((h.at - hubOff) * 1000) : null;
+  $("hmsg").textContent = busy ? busy : result && Date.now() - resultAt < 60000 ? result : at ? "Read at " + at.toTimeString().slice(0, 5) : "";
+}
+$("tminus").onclick = () => { target = Math.max(5, tgt() - 1); renderHeater(); };
+$("tplus").onclick = () => { target = Math.min(35, tgt() + 1); renderHeater(); };
+$("hwater").onclick = () => { water = water % 3 + 1; renderHeater(); };
+function confirmHeat(act){
+  const t = tgt(), wl = WATERL[water], mains = D && D.mains_live;
+  let lines = act === "off" ? [] : act === "air" ? [] : act === "water" ? [] : ["Water " + wl + ", air " + t + "°C"];
+  if(act === "vent") lines = ["No flame and no heat: it moves air round the van."];
+  const title = act === "vent" ? "Run the fan only, speed " + fanLvl() + "?" : act === "off" ? "Turn the heater OFF?" : act === "air" ? "Start air heating at " + t + "°C?" : act === "water" ? "Start water heating (" + wl + ")?" : "Start water + air heating?";
+  if(act !== "off" && act !== "vent") lines.push("Fuel: auto – " + (mains ? "electric (hook-up live)" : "diesel (no hook-up)"));
+  $("mtitle").textContent = title; $("mlines").innerHTML = lines.map(l => "<p>" + esc(l) + "</p>").join("");
+  $("myes").textContent = act === "off" ? "Turn off" : "Start"; $("myes").className = "btn " + (act === "off" ? "danger" : "go");
+  $("modal").classList.add("show");
+  $("mno").onclick = () => $("modal").classList.remove("show");
+  $("myes").onclick = () => { $("modal").classList.remove("show"); heaterCmd(act); };
+}
+async function heaterCmd(act){
+  const h = heater(), LBL = {air:"Air heat", water:"Water heat", combi:"Air + water", off:"Off", read:"Read", vent:"Fan only"};
+  busy = act === "read" ? "Reading the heater…" : LBL[act] + " – sending…"; result = null; renderHeater();
+  try{
+    const r = await post("/api/heater/cmd", {action:act, temp:tgt(), water:water, level: fanLvl(), energy:"auto"});
+    if(r.ok){ const hh = Object.assign({}, h, {connected:true}); ["status","sensors"].forEach(p => { for(const k in (r[p] || {})) if(r[p][k] != null) hh[k] = r[p][k]; });
+      hh.at = hubNow(); D.heater = hh; adoptHeater(hh); result = act === "read" ? "Heater read" : LBL[act] + " confirmed"; }
+    else result = "Failed: " + (r.error || "no reply");
+  }catch(e){ result = "Failed: " + e.message; }
+  busy = null; resultAt = Date.now(); renderHeater();
+}
+document.querySelectorAll("[data-heat]").forEach(b => b.onclick = () => { if(busy) return; const a = b.dataset.heat; if(a === "read") heaterCmd("read"); else confirmHeat(a); });
+function adoptHeater(h){ if([1,2,3].includes(h.water_code)) water = h.water_code; if(h.set_air_c >= 5 && h.set_air_c <= 35 && !$("modal").classList.contains("show")) target = h.set_air_c; }
+function renderSchedule(){
+  const tl = (D && D.timers) || [], by = {}; tl.forEach(t => by[t.id] = t); const a = (D && D.autoheat) || {};
+  const row = (t, name) => { if(!t) return '<div class="card"><b>' + name + '</b> <span class="muted small">Waiting for the hub</span></div>';
+    const stp = (label, key, dv) => '<span class="step"><button onclick="tmEdit(\'' + t.id + "','" + key + "'," + (-dv) + ')">' + ic("minus") + '</button><b>' + label + '</b><button onclick="tmEdit(\'' + t.id + "','" + key + "'," + dv + ')">' + ic("plus") + '</button></span>';
+    return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:18px">' + name + '</b><span class="muted small" style="margin-left:auto">' + esc(t.running ? "Running now" : t.last || "") +
+      '</span><button class="btn' + (t.on ? " hot" : "") + '" style="min-height:34px;min-width:76px" onclick="tmEdit(\'' + t.id + '\',\'on\',0)">' + (t.on ? "On" : "Off") + '</button></div>' +
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px">' + stp(t.at, "at", 15) +
+      (t.action === "water" ? '<button class="btn" style="min-height:34px" onclick="tmEdit(\'' + t.id + '\',\'water\',0)">Water ' + WATERL[t.water] + '</button>' : stp(t.temp + "°C", "temp", 1)) +
+      stp(t.run_min + " min", "run_min", 15) + '</div></div>'; };
+  $("sched").innerHTML = row(by.warm, "Morning warm-up") + row(by.water, "Morning hot water") +
+    '<div class="card"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:18px">Frost protection</b><span class="muted small" style="margin-left:auto">' +
+    (a.temp_c != null ? "probe " + a.temp_c + "°C" : "") + '</span><button class="btn' + (a.armed ? " lit" : "") + '" style="min-height:34px;min-width:76px;' + (a.armed ? "background:var(--blue)" : "") + '" onclick="ahEdit(\'armed\',0)">' + (a.armed ? "On" : "Off") + '</button></div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;align-items:center"><span class="muted">below</span><span class="step"><button onclick="ahEdit(\'on_below\',-1)">' + ic("minus") + '</button><b>' + num(a.on_below) + '°C</b><button onclick="ahEdit(\'on_below\',1)">' + ic("plus") + '</button></span>' +
+    '<span class="muted">heat to</span><span class="step"><button onclick="ahEdit(\'target_c\',-1)">' + ic("minus") + '</button><b>' + num(a.target_c) + '°C</b><button onclick="ahEdit(\'target_c\',1)">' + ic("plus") + '</button></span></div></div>';
+}
+async function tmEdit(id, key, arg){
+  const tl = (D.timers || []).map(t => Object.assign({}, t));
+  tl.forEach(t => { if(t.id !== id) return;
+    if(key === "on") t.on = !t.on;
+    else if(key === "at"){ const p = t.at.split(":"), m = (+p[0] * 60 + +p[1] + arg + 1440) % 1440; t.at = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+    else if(key === "water") t.water = t.water % 3 + 1;
+    else { const lim = {temp:[5,35], run_min:[15,240]}[key]; t[key] = Math.max(lim[0], Math.min(lim[1], t[key] + arg)); } });
+  D.timers = tl; renderSchedule();
+  try{ const r = await post("/api/timers", {timers: tl.map(t => ({id:t.id, on:t.on, at:t.at, temp:t.temp, water:t.water, run_min:t.run_min}))}); if(r.timers) D.timers = r.timers; }
+  catch(e){ toast("Timers: " + e.message); } renderSchedule();
+}
+async function ahEdit(key, arg){
+  const a = Object.assign({}, D.autoheat || {});
+  if(key === "armed") a.armed = !a.armed;
+  else { const lim = {on_below:[-20,25], target_c:[5,35]}[key]; a[key] = Math.max(lim[0], Math.min(lim[1], (a[key] || 0) + arg)); if(key === "on_below") a.off_above = a.on_below + 4; }
+  D.autoheat = a; renderSchedule();
+  try{ const r = await post("/api/autoheat", {armed:a.armed, on_below:a.on_below, off_above:a.off_above, target_c:a.target_c}); if(r.autoheat) D.autoheat = r.autoheat; }
+  catch(e){ toast("Frost protection: " + e.message); } renderSchedule();
+}
+
+// ============================================================================
+// Level
+// ============================================================================
+function vanFront(){ return '<g><rect x="-46" y="-40" width="92" height="66" rx="10" fill="#8e8a9a"/><rect x="-36" y="-32" width="72" height="24" rx="4" fill="#3d5a82"/>' +
+  '<rect x="-40" y="26" width="16" height="16" rx="4" fill="#27242e"/><rect x="24" y="26" width="16" height="16" rx="4" fill="#27242e"/>' +
+  '<rect x="-40" y="4" width="12" height="6" rx="2" fill="#f0e6c8"/><rect x="28" y="4" width="12" height="6" rx="2" fill="#f0e6c8"/></g>'; }
+function vanSide(){ return '<g><path d="M-78 22V-26Q-78-36-68-36H50Q60-36 66-22L78 2V22Z" fill="#8e8a9a"/><rect x="-66" y="-28" width="44" height="18" rx="3" fill="#3d5a82"/>' +
+  '<rect x="-16" y="-28" width="40" height="18" rx="3" fill="#3d5a82"/><path d="M34-28H50L62-8H34Z" fill="#3d5a82"/>' +
+  '<circle cx="-50" cy="24" r="12" fill="#27242e"/><circle cx="-50" cy="24" r="5" fill="#8e8a9a"/><circle cx="46" cy="24" r="12" fill="#27242e"/><circle cx="46" cy="24" r="5" fill="#8e8a9a"/></g>'; }
+function offCol(v){ const sc = (LV && LV.level_scale) || {ok:1, warn:20}; const a = Math.abs(v); return a <= sc.ok ? "var(--green)" : a >= sc.warn ? "var(--red)" : "var(--amber)"; }
+function renderLevel(){
+  const l = LV && LV.level;
+  $("lvbub").classList.toggle("lit", levelView === "bubble"); $("lvwh").classList.toggle("lit", levelView === "wheels");
+  if(!l || !l.enabled || !l.ok){ $("lvmain").innerHTML = '<text x="100" y="100" text-anchor="middle" fill="#9a8f9e" font-size="15">' +
+      (
+      !l ? "Waiting for the hub" : !l.enabled ? "Levelling is off" : "No reading") + '</text>'; $("lvfront").innerHTML = $("lvside").innerHTML = ""; return; }
+  const roll = l.roll, pitch = l.pitch;
+  if(levelView === "bubble"){
+    const k = 88 / 6, bx = Math.max(-80, Math.min(80, roll * k)), by = Math.max(-80, Math.min(80, -pitch * k));
+    $("lvmain").innerHTML = '<circle cx="100" cy="100" r="92" fill="#1a2a24" stroke="#34303c" stroke-width="3"/><circle cx="100" cy="100" r="46" fill="none" stroke="#3a4a42"/>' +
+      '<circle cx="100" cy="100" r="14" fill="none" stroke="#5a6a62"/><line x1="8" y1="100" x2="192" y2="100" stroke="#3a4a42"/><line x1="100" y1="8" x2="100" y2="192" stroke="#3a4a42"/>' +
+      '<text x="100" y="30" text-anchor="middle" fill="#cfd8d3" font-size="13">NOSE UP</text><text x="100" y="180" text-anchor="middle" fill="#cfd8d3" font-size="13">NOSE DOWN</text>' +
+      '<text x="20" y="104" fill="#cfd8d3" font-size="13">L</text><text x="172" y="104" fill="#cfd8d3" font-size="13">R</text>' +
+      '<circle cx="' + (100 + bx) + '" cy="' + (100 + by) + '" r="15" fill="' + offCol(l.off_by || 0).replace("var(--green)", "#3fb950").replace("var(--amber)", "#d29922").replace("var(--red)", "#f85149") + '" stroke="#efe9e0" stroke-width="2"/>';
+  } else {
+    const van = (D && D.van) || {wheelbase_mm:3640, track_mm:1777}, wb = van.wheelbase_mm, tr = van.track_mm;
+    const tR = Math.tan(roll * Math.PI / 180), tP = Math.tan(pitch * Math.PI / 180);
+    const hts = [[-tr/2, wb/2],[tr/2, wb/2],[-tr/2,-wb/2],[tr/2,-wb/2]].map(p => p[0] * tR + p[1] * tP), top = Math.max(...hts);
+    const cm = hts.map(v => { const c = (top - v) / 10; return c >= 10 ? Math.round(c) : Math.round(c * 2) / 2; });
+    const lab = (c, x, y, a) => '<text x="' + x + '" y="' + y + '" text-anchor="' + a + '" font-size="20" font-weight="700" fill="' + (c <= 0.5 ? "#3fb950" : "#efe9e0") + '">' + (c <= 0 ? "0" : c) + '<tspan font-size="12" fill="#9a8f9e"> cm</tspan></text>';
+    $("lvmain").innerHTML = '<text x="100" y="16" text-anchor="middle" fill="#9a8f9e" font-size="12" letter-spacing="1">RAISE EACH WHEEL</text>' +
+      '<rect x="76" y="26" width="48" height="150" rx="12" fill="#c9c4d2"/><rect x="84" y="38" width="32" height="14" fill="#3d5a82"/><path d="M100 60v24M92 70l8-10 8 10" stroke="#27242e" stroke-width="3" fill="none"/>' +
+      '<rect x="68" y="44" width="9" height="24" fill="#27242e"/><rect x="123" y="44" width="9" height="24" fill="#27242e"/><rect x="68" y="136" width="9" height="24" fill="#27242e"/><rect x="123" y="136" width="9" height="24" fill="#27242e"/>' +
+      lab(cm[0], 62, 62, "end") + lab(cm[1], 138, 62, "start") + lab(cm[2], 62, 154, "end") + lab(cm[3], 138, 154, "start") +
+      '<text x="100" y="194" text-anchor="middle" fill="#9a8f9e" font-size="12">' + (!l.calibrated || l.cal_stale ? "Not calibrated" : Math.max(...cm) > 12 ? "Too steep for ramps" : "to level the van") + '</text>';
+  }
+  // Drawn level within the "level" tolerance (Settings, 1 degree unless set);
+  // beyond it only the part over the tolerance is drawn, magnified x3 - so a
+  // 1 degree tilt no longer looks like 3, and nothing jumps at the edge.
+  const okDeg = ((LV && LV.level_scale) || {ok:1}).ok;
+  const tilt = deg => { const a = Math.abs(deg) - okDeg; return a <= 0 ? 0 : Math.sign(deg) * Math.min(35, a * 3); };
+  const panel = (id, title, shape, deg, word, sides) => {
+    const shown = tilt(deg), r = Math.round(Math.abs(deg)), level = Math.abs(deg) <= okDeg;
+    $(id).innerHTML = '<div class="lab">' + title + '</div><div style="display:flex;align-items:center;gap:10px"><svg viewBox="-100 -60 200 120" style="width:62%;max-height:120px">' +
+      '<line x1="-96" y1="44" x2="96" y2="44" stroke="#34303c" stroke-width="2"/><g transform="rotate(' + shown.toFixed(1) + ')">' + shape + '</g>' +
+      (sides ? '<text x="-96" y="58" fill="#9a8f9e" font-size="12">' + sides[0] + '</text><text x="96" y="58" text-anchor="end" fill="#9a8f9e" font-size="12">' + sides[1] + '</text>' : "") +
+      '</svg><div style="flex:1;text-align:center"><div style="font-size:32px;font-weight:700;color:' + offCol(deg) + '">' + r + '&deg;</div><div class="muted small">' + (level ? "level" : "raise the") + '</div><div style="font-weight:700;font-size:18px">' + (level ? "" : word) + '</div></div></div>';
+  };
+  panel("lvfront", "From the front", vanFront(), roll, roll > 0 ? "LEFT" : "RIGHT", ["RIGHT", "LEFT"]);
+  panel("lvside", "From the side", vanSide(), -pitch, pitch > 0 ? "REAR" : "FRONT", null);
+}
+$("lvbub").onclick = () => { levelView = "bubble"; renderLevel(); };
+$("lvwh").onclick = () => { levelView = "wheels"; renderLevel(); };
+// Calibrate from here, where it is wanted: parked on ground known to be flat.
+// ---- G-force, for driving (as display/ui.py): an accelerometer cannot tell a
+// tilt from an acceleration, so the apparent tilt is turned back into the force
+// felt - forward g = tan(pitch), sideways g = tan(roll), from the levelling
+// calibration - and bumps from how far the total strays from a steady 1 g.
+const G_SCALE = 0.6;
+const GF = {now: null, trail: [], base: null, peak: {acc:0, brk:0, left:0, right:0, bump:0}};
+function gSample(l){
+  if(!l || !l.ok) return;
+  const rad = Math.PI / 180, lat = Math.tan((l.roll || 0) * rad), lon = Math.tan((l.pitch || 0) * rad);
+  const a = l.axes || {}, mag = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
+  let vert = 0;
+  if(mag){ GF.base = GF.base == null ? mag : GF.base + 0.02 * (mag - GF.base); vert = mag - GF.base; }
+  GF.now = [lat, lon, vert]; GF.trail = GF.trail.concat([[lat, lon]]).slice(-24);
+  const p = GF.peak; p.acc = Math.max(p.acc, lon); p.brk = Math.max(p.brk, -lon);
+  p.right = Math.max(p.right, lat); p.left = Math.max(p.left, -lat); p.bump = Math.max(p.bump, Math.abs(vert));
+}
+const gCol = v => Math.abs(v) < 0.25 ? "var(--green)" : Math.abs(v) < 0.45 ? "var(--amber)" : "var(--red)";
+function renderGforce(){
+  const l = LV && LV.level;
+  const [lat, lon, vert] = GF.now || [0, 0, 0], S = G_SCALE, cx = 110, cy = 110, R = 100;
+  const at = (gx, gy) => { const m = Math.hypot(gx, gy); if(m > S){ gx *= S / m; gy *= S / m; }
+    return [cx + (R - 10) * gx / S, cy - (R - 10) * gy / S]; };
+  let g = '<circle cx="110" cy="110" r="' + R + '" fill="#27242e"/>';
+  [0.2, 0.4].forEach(v => g += '<circle cx="110" cy="110" r="' + ((R - 10) * v / S).toFixed(1) + '" fill="none" stroke="#34303c" stroke-width="2"/>');
+  g += '<line x1="18" y1="110" x2="202" y2="110" stroke="#34303c"/><line x1="110" y1="18" x2="110" y2="202" stroke="#34303c"/>' +
+    '<text x="110" y="30" text-anchor="middle" fill="#9a8f9e" font-size="12">ACCEL</text><text x="110" y="200" text-anchor="middle" fill="#9a8f9e" font-size="12">BRAKE</text>' +
+    '<text x="22" y="106" fill="#9a8f9e" font-size="12">L</text><text x="192" y="106" fill="#9a8f9e" font-size="12">R</text>' +
+    '<text x="' + (cx + (R - 10) * 0.2 / S + 3).toFixed(0) + '" y="124" fill="#9a8f9e" font-size="11">0.2</text>';
+  const n = GF.trail.length;
+  GF.trail.slice(0, -1).forEach((t, i) => { const [x, y] = at(t[0], t[1]);
+    g += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (2 + 3 * i / n).toFixed(1) + '" fill="#d3a94a" opacity="' + (0.25 + 0.5 * i / n).toFixed(2) + '"/>'; });
+  const [px, py] = at(lat, lon);
+  g += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="10" fill="' + gCol(Math.hypot(lat, lon)) + '" stroke="#efe9e0" stroke-width="2"/>';
+  $("gball").innerHTML = g;
+  const p = GF.peak;
+  const bar = (v, posPeak, negPeak, words) => {
+    const word = words && Math.abs(v) >= 0.02 ? " " + (v > 0 ? words[0] : words[1]) : "";
+    let b;
+    if(!words){                                    // bumps: one-sided, to 0.5 g
+      b = '<div style="position:relative;height:10px;background:#27242e;border-radius:5px;margin-top:8px"><div style="height:10px;border-radius:5px;background:var(--blue);width:' +
+        Math.min(100, Math.abs(v) / 0.5 * 100).toFixed(0) + '%"></div><div style="position:absolute;top:-3px;width:2px;height:16px;background:#efe9e0;left:' + Math.min(100, posPeak / 0.5 * 100).toFixed(0) + '%"></div></div>';
+    } else {
+      const w = Math.min(50, Math.abs(v) / S * 50);
+      b = '<div style="position:relative;height:10px;background:#27242e;border-radius:5px;margin-top:8px">' +
+        '<div style="position:absolute;left:50%;top:-3px;width:1px;height:16px;background:#4a4553"></div>' +
+        '<div style="position:absolute;top:1px;height:8px;background:' + gCol(v) + ';' + (v > 0 ? 'left:50%' : 'right:50%') + ';width:' + w.toFixed(1) + '%"></div>' +
+        (posPeak > 0.01 ? '<div style="position:absolute;top:-3px;width:2px;height:16px;background:#efe9e0;left:' + (50 + Math.min(50, posPeak / S * 50)).toFixed(1) + '%"></div>' : '') +
+        (negPeak > 0.01 ? '<div style="position:absolute;top:-3px;width:2px;height:16px;background:#efe9e0;left:' + (50 - Math.min(50, negPeak / S * 50)).toFixed(1) + '%"></div>' : '') + '</div>';
+    }
+    return '<span style="font-size:20px;font-weight:700">' + Math.abs(v).toFixed(2) + ' g' + word + '</span>' + b;
+  };
+  const row = (label, body) => '<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lab">' + label + '</span></div>' + body;
+  $("gfwd").innerHTML = row("Forward", bar(lon, p.acc, p.brk, ["accel", "brake"]));
+  $("gcor").innerHTML = row("Cornering", bar(lat, p.right, p.left, ["right", "left"]));
+  $("gbump").innerHTML = row("Bumps", bar(vert, p.bump, 0, null));
+  $("gpeak").innerHTML = '<div style="display:flex;justify-content:space-between"><span class="lab">Peaks</span><span class="muted small">tap to reset</span></div>' +
+    '<div style="margin-top:4px">Brake ' + p.brk.toFixed(2) + ' &nbsp; Accel ' + p.acc.toFixed(2) + '<br>Corner ' + Math.max(p.left, p.right).toFixed(2) + ' &nbsp; Bump ' + p.bump.toFixed(2) + '</div>';
+}
+$("gpeak").onclick = () => { for(const k in GF.peak) GF.peak[k] = 0; renderGforce(); };
+
+// ---- Tanks (as display/ui.py): sample levels until the hub reports "tanks" ----
+function tankLevels(){ const t = D && D.tanks; return (t && (t.fresh != null || t.grey != null)) ? t : {fresh: 90, grey: 33, demo: true}; }
+function tankState(key, pct){
+  if(key === "fresh") return pct < 15 ? ["Refill now", "var(--red)"] : pct < 35 ? ["Getting low", "var(--amber)"] : ["Plenty", "var(--green)"];
+  return pct > 85 ? ["Empty now", "var(--red)"] : pct > 65 ? ["Empty soon", "var(--amber)"] : ["Fine", "var(--green)"];
+}
+function renderTanks(){
+  const t = tankLevels();
+  $("tanksgrid").innerHTML = [["fresh", "Fresh water", "#4696e6"], ["grey", "Grey water", "#807868"]].map(([k, name, water]) => {
+    const pct = t[k];
+    const H = 180, lh = pct == null ? 0 : Math.max(0, Math.min(100, pct)) / 100 * (H - 6);
+    const svg = '<svg viewBox="0 0 90 200" style="height:100%;max-height:220px;width:auto">' +
+      '<rect x="31" y="0" width="28" height="12" rx="4" fill="#34303c"/>' +
+      '<rect x="0" y="9" width="90" height="' + H + '" rx="16" fill="#34303c"/><rect x="3" y="12" width="84" height="' + (H - 6) + '" rx="13" fill="#27242e"/>' +
+      (lh > 0 ? '<clipPath id="tc' + k + '"><rect x="3" y="12" width="84" height="' + (H - 6) + '" rx="13"/></clipPath>' +
+        '<rect clip-path="url(#tc' + k + ')" x="3" y="' + (12 + H - 6 - lh).toFixed(1) + '" width="84" height="' + lh.toFixed(1) + '" fill="' + water + '"/>' +
+        '<rect x="7" y="' + (12 + H - 6 - lh).toFixed(1) + '" width="76" height="3" fill="#efe9e0" opacity=".4"/>' : '') +
+      [1, 2, 3].map(q => '<line x1="74" x2="84" y1="' + (12 + (H - 6) * (1 - q / 4)).toFixed(1) + '" y2="' + (12 + (H - 6) * (1 - q / 4)).toFixed(1) + '" stroke="#9a8f9e"/>').join("") + '</svg>';
+    let side = '<div style="font-size:30px;font-weight:700">–</div><div class="muted small">No reading</div>';
+    if(pct != null){ const [w, c] = tankState(k, pct);
+      side = '<div style="font-size:34px;font-weight:700">' + pct + '%</div><div class="muted small">full</div>' +
+        '<span class="chip" style="margin-top:10px;color:' + c + '">' + w + '</span>'; }
+    return '<div class="card"><div class="lab">' + name + '</div><div style="display:flex;gap:24px;align-items:center;justify-content:center;height:calc(100% - 20px)">' + svg + '<div style="min-width:120px">' + side + '</div></div></div>';
+  }).join("");
+}
+
+$("lvcal").onclick = async () => {
+  if(!confirm("Set the current position as level?\n\nThe van should be on ground you know to be flat and have stopped moving.")) return;
+  const b = $("lvcal"); b.disabled = true; b.textContent = "Measuring…";
+  try{
+    await post("/api/level", {action: "calibrate"});
+    toast("Level set");
+    LV = null;                               // the next reading is against the new zero
+  }catch(e){ toast("Not set: " + e.message); }
+  b.disabled = false; b.textContent = "Set level here";
+};
+
+// ============================================================================
+// Switches (for relays on the hub later) and Drive
+// ============================================================================
+const SWITCHES = [["Water pump","drop"],["Fridge","snow"],["Garage light","home"],["Inverter","bolt"],["Lights","bulb"],["USB","power"]];
+function renderSwitches(){
+  // the state is the hub's, shared with the display - as the ambient light is
+  const swState = (D && D.display && Array.isArray(D.display.switches)) ? D.display.switches : [false,false,false,false,false,false];
+  // names as set in the hub's settings
+  const nm = (D && Array.isArray(D.switch_names) && D.switch_names.length === SWITCHES.length) ? D.switch_names : SWITCHES.map(s => s[0]);
+  const icn = (D && Array.isArray(D.switch_icons) && D.switch_icons.length === SWITCHES.length) ? D.switch_icons : SWITCHES.map(s => s[1]);
+  $("swgrid").innerHTML = SWITCHES.map((s, i) => '<button class="swb' + (swState[i] ? " on" : "") + '" data-sw="' + i + '">' + ic(icn[i] || s[1]) + '<b>' + esc(nm[i] || s[0]) + '</b>' +
+    '<div class="ft"><span class="small" style="color:' + (swState[i] ? "var(--brand)" : "var(--muted)") + '">' + (swState[i] ? "On" : "Off") + '</span><span class="tog' + (swState[i] ? " on" : "") + '"></span></div></button>').join("");
+  // the relays: behind the hub's password, like the heater
+  $("swgrid").querySelectorAll("[data-sw]").forEach(b => b.onclick = async () => { const i = +b.dataset.sw;
+    editing = Date.now();
+    try{ const r = await post("/api/switches", {i: i, on: !swState[i]}); if(D){ D.display = r.display; } render(); }
+    catch(e){ toast("Not switched: " + e.message); } });
+}
+function driveChecks(){
+  const d = D || {}, out = [], h = d.heater || {};
+  out.push(d.mains_live ? ["Hook-up", "bad", "Still plugged in!"] : ["Hook-up", "ok", "Unplugged"]);
+  out.push(h.on ? ["Heater on", "warn", "Heater is on"] : (h.connected || h.remembered) ? ["Heater off", "ok", "Off"] : ["Heater off", "warn", "Not read - check it"]);
+  const al = (d.alerts || []).filter(a => !a.acked);
+  out.push(al.length ? ["Alarms", "bad", al[0].title] : ["No alarms", "ok", "None"]);
+  const soc = d.connected ? d.soc : null;
+  out.push(soc == null ? ["Battery", "warn", "Offline"] : soc < 20 ? ["Battery", "warn", soc + "% - low"] : ["Battery", "ok", soc + "%"]);
+  return out;
+}
+function driveLeft(){ const items = (D && D.checklist) || [], ticks = new Set(((D && D.display) || {}).ticks || []);
+  return driveChecks().filter(c => c[1] !== "ok").length + items.filter(i => !ticks.has(i)).length; }
+function renderDrive(){
+  const col = {ok:"var(--green)", warn:"var(--amber)", bad:"var(--red)"};
+  $("dchecks").innerHTML = driveChecks().map(c => '<div class="check"><span class="dot" style="background:' + col[c[1]] + ';margin-top:6px"></span><div><div style="font-weight:600;font-size:18px">' +
+    esc(c[0]) + '</div><div class="small" style="color:' + (c[1] === "ok" ? "var(--muted)" : col[c[1]]) + '">' + esc(c[2]) + '</div></div></div>').join("");
+  const items = (D && D.checklist) || [], ticks = new Set(((D && D.display) || {}).ticks || []);
+  $("dticks").innerHTML = items.map((t, i) => '<div class="tick' + (ticks.has(t) ? " on" : "") + '" data-i="' + i + '"><span class="box">' + (ticks.has(t) ? ic("check").replace("ic", "ic") : "") + '</span><span>' + esc(t) + '</span></div>').join("");
+  $("dticks").querySelectorAll("[data-i]").forEach(el => el.onclick = () => { const t = items[+el.dataset.i], s = new Set(D.display.ticks || []);
+    s.has(t) ? s.delete(t) : s.add(t); D.display.ticks = [...s]; renderDrive(); header(); share({ticks: D.display.ticks}); });
+}
+
+// ============================================================================
+// Rendering and polling
+// ============================================================================
+function render(){
+  if(page === LOGO) return;
+  header();
+  const name = PAGES[page][0];
+  if(name === "home"){ if(sub.home === "forecast") renderForecast(); else if(sub.home === "timer") renderTimer(); else renderHome(); }
+  else if(name === "power"){ const v = sub.power; if(v === "flow") renderFlow(); else if(v === "details") renderDetails(); else if(v === "day") renderDay();
+    else if(v === "battery") renderBattery(); else if(v === "lights") renderLights(); }
+  else if(name === "heater"){ if(sub.heater === "schedule") renderSchedule(); else renderHeater(); }
+  else if(name === "level"){ if(sub.level === "gforce") renderGforce(); else renderLevel(); }
+  else if(name === "switches") renderSwitches();
+  else if(name === "tanks") renderTanks();
+  else if(name === "drive") renderDrive();
+}
+async function poll(){
+  try{
+    const d = await (await fetch("/api/data", {cache:"no-store"})).json();
+    if(d.updated) hubOff = d.updated - Date.now() / 1000;
+    const oldAt = D && D.heater && D.heater.at;
+    if(Date.now() - editing < 2500 && D && D.display) d.display = D.display;     // an edit here is newer
+    D = d;
+    if(d.heater && d.heater.at !== oldAt) adoptHeater(d.heater);
+    $("nopw").style.display = d.auth_set === false ? "" : "none";
+    $("link").className = "ok";
+    render();
+  }catch(e){ $("link").className = "down"; }
+}
+async function pollWeather(){ try{ WX = await (await fetch("/api/weather", {cache:"no-store"})).json(); render(); }catch(e){} }
+async function pollLevel(){
+  if(page !== LOGO && PAGES[page][0] === "level" && !document.hidden){
+    try{ LV = await (await fetch("/api/level", {cache:"no-store"})).json();
+      if(sub.level === "gforce"){ gSample(LV.level); renderGforce(); } else renderLevel(); header(); }catch(e){}
+  }
+  setTimeout(pollLevel, sub.level === "gforce" ? 300 : (LV && LV.refresh_ms) || 800);
+}
+// ---- fitting the screen ------------------------------------------------------
+// Held sideways (or on a laptop or tablet) the app is the display's layout,
+// drawn at a size designed for and scaled as one piece to fill the screen -
+// so a phone on its side shows the whole display, not a cropped strip of it.
+// Held upright on a phone, the cards stack instead and nothing is scaled.
+const DESIGN_W = 900, DESIGN_H = 560;
+let Z = 1;                                   // the scale; touches are divided by it
+function fit(){
+  // the safety banner, when it shows, takes its own height (which includes
+  // the notch on a phone) from the top
+  const bar = document.body.classList.contains("alerting") && $("alertbar");
+  const bh = bar ? bar.offsetHeight || 52 : 0;
+  document.documentElement.style.setProperty("--alerth", bh + "px");
+  const w = innerWidth, h = innerHeight - bh;
+  const narrow = h > w && w < 700;
+  document.body.classList.toggle("narrow", narrow);
+  Z = narrow ? 1 : Math.max(0.4, Math.min(w / DESIGN_W, h / DESIGN_H, 1.6));
+  const app = $("app");
+  app.style.width = (w / Z) + "px"; app.style.height = (h / Z) + "px";
+  app.style.transform = Z === 1 ? "" : "scale(" + Z + ")";
+}
+fit();
+// the alarm bar, when it shows, takes room from the top: fit round it
+new MutationObserver(fit).observe(document.body, {attributes: true, attributeFilter: ["class"]});
+addEventListener("orientationchange", () => setTimeout(() => { fit(); buildFlow(); render(); }, 200));
+buildTabs(); buildClock(); buildFlow();
+addEventListener("resize", () => { fit(); const was = flowMode; buildFlow(); if(flowMode !== was) render(); });
+try{ const p = +localStorage.getItem("page"); if(p >= 0 && p < PAGES.length) page = p; }catch(e){}
+showPage(); tickClock(); setInterval(tickClock, 1000);
+setInterval(() => { if(page !== LOGO && PAGES[page][0] === "home" && sub.home === "timer") renderTimer(); }, 1000);
+  poll(); setInterval(poll, 5000);
+  pollWeather(); setInterval(pollWeather, 600000);
+pollLevel();
+</script>
+</body>
+</html>

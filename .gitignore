@@ -1,0 +1,76 @@
+# Secrets — config.py holds the WiFi password, hotspot password, Victron
+# encryption key and API token for this specific van. Use config.example.py as
+# the template; the real file stays on the device and off GitHub.
+pico/config.py
+
+# Runtime state written on the Pico, not source
+settings.json
+storage.json
+hist.csv
+weather.json
+weather.meta
+stats.json
+level_cal.json
+level_log.csv
+
+# Bytecode deployment, produced by tools/build_mpy.py. Generated, and it holds
+# a copy of the real config.py - so it must never be committed.
+build/
+
+# Stale mirror of static/ left over from an earlier deploy layout.
+# The pages are deployed from static/ to the Pico's :www/.
+pico/www/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Android build output (137 MB of generated artefacts)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Decompiled third-party APK kept locally for protocol reference only —
+# not ours to redistribute.
+heater_apk/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Real credentials for the PC-side tools (see victron.py)
+local_secrets.py
+
+# Unrelated backup of the earlier pico_beacon firmware, with its own WiFi
+# credentials in it. Kept locally, not part of this project.
+pico/_pico_backup_beacon/
+
+# Van display: config.py holds the WiFi passwords, like the hub's.
+display/config.py
+
+# Android hub app build output
+android_hub/app/build/
+android_hub/build/
+android_hub/.gradle/
+android_hub/.kotlin/
+android_hub/local.properties
+
+# Display preview renders (tools/preview_display.py)
+preview/
+
+# An older, separate experiment (hub modules with an ST7735 screen), kept
+# locally for reference only.
+tracker/
+
+# The display update key (tools/publish_display.py): signs what the displays
+# accept over the air. Never commit it; keep a backup somewhere safe.
+.ota_key

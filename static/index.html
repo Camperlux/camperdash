@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IntrepidVan · Systems</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+:root{
+    --bg:#0f0e12; --panel:#17151b; --panel2:#201d26; --line:#322d3a;
+    --txt:#efe9e0; --muted:#9a8f9e; --accent:#3fb950; --amber:#d29922;
+    --red:#f85149; --blue:#58a6ff; --cyan:#39d3c3;
+    --brand:#d3a94a; --brand-dim:#c0912e;
+  }
+  header,.statuses,.grid{max-width:1250px;margin-left:auto;margin-right:auto}
+  #status,#rstatus,#vstatus{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .chip.state{color:var(--cyan);border-color:var(--cyan)}
+  .chip.src{color:var(--blue);border-color:var(--blue)}
+  .card .value .off{font-size:16px;color:var(--muted);font-weight:400}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .card .value .unit{font-size:14px;color:var(--muted);font-weight:400;margin-left:3px}
+
+  /* SOC hero card */
+  .soc{grid-column:span 2;display:flex;align-items:center;gap:20px}
+  .batt{position:relative;width:88px;height:150px;border:4px solid var(--line);
+    border-radius:12px;flex:0 0 auto;overflow:hidden;background:var(--panel2)}
+  .batt::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    width:34px;height:8px;background:var(--line);border-radius:4px 4px 0 0}
+  .batt .fill{position:absolute;bottom:0;left:0;right:0;background:var(--accent);
+    transition:height .6s ease, background .4s}
+  .soc .big{font-size:52px;font-weight:700;line-height:1}
+  .soc .big .unit{font-size:22px;color:var(--muted);font-weight:400}
+
+  .flow{font-variant-numeric:tabular-nums}
+  .charging{color:var(--accent)} .discharging{color:var(--amber)} .idle{color:var(--muted)}
+
+  .cells .label{margin-bottom:12px}
+  .cellrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+  .cellrow .name{width:44px;color:var(--muted)}
+  .cellrow .bar{flex:1;height:10px;background:var(--panel2);border-radius:5px;overflow:hidden}
+  .cellrow .bar>div{height:100%;background:var(--blue);border-radius:5px;transition:width .5s}
+  .cellrow .mv{width:64px;text-align:right;font-variant-numeric:tabular-nums}
+  .cellrow.hi .bar>div{background:var(--accent)} .cellrow.lo .bar>div{background:var(--amber)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .trow{display:grid;grid-template-columns:24px 1fr auto;align-items:baseline;gap:8px;margin:9px 0}
+  .trow .tn{color:var(--txt);font-size:13px;font-weight:600}
+  .trow .tr{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .trow b{font-weight:600;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+  .eta{color:var(--txt);margin-top:4px}
+  .kv{display:flex;align-items:baseline;gap:8px;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums}
+  .kv span{color:var(--muted);width:56px}
+  .kv i{font-style:normal;color:var(--muted);font-size:12px}
+  .trend svg{width:100%;height:170px;display:block;margin-top:4px}
+  .key{font-style:normal;font-size:11px;text-transform:none;letter-spacing:0;margin-left:10px}
+  .key.a{color:var(--accent)} .key.s{color:var(--blue)}
+  .rbtn{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:999px;
+    padding:3px 9px;font-size:11px;cursor:pointer;margin-left:5px;text-transform:none;letter-spacing:0}
+  .rbtn.sel{color:var(--brand);border-color:var(--brand)}
+
+  /* ---- safety alert ---------------------------------------------------- */
+  #alertbar{position:fixed;left:0;right:0;top:0;z-index:950;display:none;
+    align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background:var(--red);color:#fff;font-size:15px;font-weight:600;
+    box-shadow:0 2px 18px rgba(0,0,0,.5)}
+  #alertbar.show{display:flex}
+  #alertbar .atext{flex:1;min-width:0}
+  #alertbar .adetail{display:block;font-weight:400;font-size:13px;opacity:.92;margin-top:2px}
+  #alertbar button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);
+    border-radius:9px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+  #alertbar button:hover{background:rgba(255,255,255,.28)}
+  /* the whole page pulses, so it catches the eye from across the van */
+  @keyframes alertflash{0%,100%{box-shadow:inset 0 0 0 0 rgba(248,81,73,0)}
+                        50%{box-shadow:inset 0 0 0 6px rgba(248,81,73,.85)}}
+  body.alerting{animation:alertflash 1s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){body.alerting{animation:none}
+    #alertbar.show{outline:3px solid #fff}}
+</style>
+</head>
+<body>
+<header>
+  <h1><img class="logo" src="/logo.jpg" alt="">Intrepid<span class="dot">Van</span> · Systems</h1>
+  <nav><a href="/">&lsaquo; Back to the van</a><a href="/settings">Settings</a></nav>
+</header>
+<div class="statuses">
+  <div id="status"><span class="led"></span><span id="statustext">Battery</span></div>
+  <div id="rstatus"><span class="led"></span><span id="rstatustext">DC-DC</span></div>
+  <div id="vstatus"><span class="led"></span><span id="vstatustext">Mains</span></div>
+</div>
+
+<div class="grid">
+  <div class="card soc">
+    <div class="batt"><div class="fill" id="battfill" style="height:0%"></div></div>
+    <div>
+      <div class="label">State of charge</div>
+      <div class="big"><span id="soc">–</span><span class="unit">%</span></div>
+      <div class="sub"><span id="ah">–</span> / <span id="ahnom">–</span> Ah</div>
+      <div class="sub eta" id="eta">–</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">Pack voltage</div>
+    <div class="value"><span id="volts">–</span><span class="unit">V</span></div>
+    <div class="sub">4S LiFePO₄</div>
+  </div>
+
+  <div class="card">
+    <div class="label" id="flowlabel">Current</div>
+    <div class="value flow"><span id="amps">–</span><span class="unit">A</span></div>
+    <div class="sub"><span id="power">–</span> W</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Load</div>
+    <div class="value"><span id="load">–</span><span class="unit">A</span></div>
+    <div class="sub"><span id="loadw">–</span> W · <span id="loadnote">Needs both devices</span></div>
+  </div>
+
+  <div class="card cells" style="grid-column:span 2">
+    <div class="label">Cells · balance <span id="delta" style="float:right;color:var(--muted)"></span></div>
+    <div id="cells"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Battery temps</div>
+    <div id="temps"><span class="nsub">–</span></div>
+    <div class="sub" id="tspread" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Health</div>
+    <div class="chips" id="health"></div>
+    <div class="ctl" style="margin-top:12px">
+      <button class="btn" id="fet-charge">Charge</button>
+      <button class="btn" id="fet-discharge">Discharge</button>
+      <button class="btn" id="storage">Storage mode</button>
+      <label style="margin-left:4px">hold at
+        <input id="storagetgt" type="number" min="30" max="95" step="5" value="80" style="width:58px"> %</label>
+    </div>
+    <div class="sub" id="fetres" style="margin-top:8px">&nbsp;</div>
+    <div class="sub" style="margin-top:10px">Cycles: <span id="cycles">–</span> · Mfd <span id="mfd">–</span></div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Energy today</div>
+    <div class="kv"><span>In</span><b class="charging"><span id="whin">–</span> Wh</b><i id="ahin"></i></div>
+    <div class="kv"><span>Out</span><b class="discharging"><span id="whout">–</span> Wh</b><i id="ahout"></i></div>
+    <div class="kv"><span>Net</span><b id="whnet">–</b></div>
+    <div class="sub" id="since"></div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Today's extremes</div>
+    <div class="kv"><span>Voltage</span><b id="xv">–</b></div>
+    <div class="kv"><span>Current</span><b id="xa">–</b></div>
+    <div class="kv"><span>SOC</span><b id="xsoc">–</b></div>
+    <div class="kv"><span>Temp</span><b id="xt">–</b></div>
+  </div>
+
+  <div class="section">Renogy DC-DC charger · <span id="rmodel">RBC50D1S-G6</span></div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Charger → battery</div>
+    <div class="value"><span id="rchg">–</span><span class="unit">A</span></div>
+    <div class="sub"><span id="rchgw">–</span> W · sees battery at <span id="rbv">–</span> V</div>
+    <div class="chips" style="margin-top:10px">
+      <span class="chip state" id="rstate">–</span>
+      <span class="chip src" id="rsource">–</span>
+      <span class="chip" id="rtemp">–</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">Alternator</div>
+    <div class="value"><span id="altw">–</span><span class="unit">W</span></div>
+    <div class="sub"><span id="altv">–</span> V · <span id="alta">–</span> A</div>
+    <div class="sub" id="altnote"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Solar</div>
+    <div class="value"><span id="solw">–</span><span class="unit">W</span></div>
+    <div class="sub"><span id="solv">–</span> V · <span id="sola">–</span> A</div>
+    <div class="sub">today <b id="rwh">–</b> Wh · <span id="rah">–</span> Ah</div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Charger stats</div>
+    <div class="kv"><span>Today</span><b id="rtoday">–</b></div>
+    <div class="kv"><span>Peak</span><b id="rpeak">–</b></div>
+    <div class="kv"><span>Lifetime</span><b id="rlife">–</b></div>
+    <div class="chips" id="rfaults" style="margin-top:6px"></div>
+  </div>
+
+  <div class="section">Victron mains charger · <span id="vmodel">Blue Smart IP22</span></div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Mains hook up → battery</div>
+    <div class="value"><span id="vchg">–</span><span class="unit">A</span></div>
+    <div class="sub"><span id="vchgw">–</span> W · output <span id="vv">–</span> V</div>
+    <div class="chips" style="margin-top:10px">
+      <span class="chip state" id="vstate">–</span>
+      <span class="chip" id="verr">–</span>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column:span 2">
+    <div class="label">Total charge into battery</div>
+    <div class="value"><span id="totchg">–</span><span class="unit">A</span></div>
+    <div class="sub" id="totbreak">DC-DC + mains</div>
+  </div>
+
+  <div class="card trend" style="grid-column:1 / -1">
+    <div class="label">Trend · <span id="span">last 2 h</span>
+      <span style="float:right">
+        <button class="rbtn sel" data-range="hour">1 hour</button><button class="rbtn" data-range="day">1 day</button><button class="rbtn" data-range="week">7 days</button>
+        <i class="key a">Current (A)</i> <i class="key s">SOC (%)</i></span></div>
+    <svg id="graph" viewBox="0 0 600 170" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
+<footer>Live from BMS SP04S060L4S300A · updates every 2 s · <span id="age">–</span></footer>
+
+<script src="/common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+function fmtFlow(a){
+  if(a===undefined||a===null) return {cls:'idle',txt:'–'};
+  if(a>0.05) return {cls:'charging',txt:'+'+a.toFixed(2)};
+  if(a<-0.05) return {cls:'discharging',txt:a.toFixed(2)};
+  return {cls:'idle',txt:'0.00'};
+}
+
+async function tick(){
+  let d;
+  try{ d = await (await fetch('/api/data',{cache:'no-store'})).json(); }
+  catch(e){ setStatus(false,'Server unreachable'); return; }
+
+  renderRenogy(d.renogy||{}, d.derived||{});
+  renderVictron(d.victron||{}, d.renogy||{});
+  if(!d.connected){
+    setStatus(false, d.error ? 'Battery: '+d.error.slice(0,30) : 'Battery…');
+    return;
+  }
+  setStatus(true,'Battery');
+
+  if(d.soc!=null){ $('soc').textContent=d.soc; $('battfill').style.height=d.soc+'%';
+    $('battfill').style.background = d.soc<20?'var(--red)':d.soc<50?'var(--amber)':'var(--accent)'; }
+  if(d.residual_ah!=null) $('ah').textContent=d.residual_ah.toFixed(1);
+  if(d.nominal_ah!=null) $('ahnom').textContent=d.nominal_ah.toFixed(0);
+  if(d.voltage!=null) $('volts').textContent=d.voltage.toFixed(2);
+
+  const f=fmtFlow(d.current);
+  $('amps').className='flow '+f.cls; $('amps').textContent=f.txt;
+  $('flowlabel').textContent = d.current>0.05?'Charging':d.current<-0.05?'Discharging':'Current';
+  if(d.power_w!=null) $('power').textContent=(d.power_w>0?'+':'')+d.power_w.toFixed(1);
+
+  if(d.cells_mv){
+    const mn=d.cell_min_mv, mx=d.cell_max_mv;
+    $('delta').textContent='Δ '+(d.cell_delta_mv)+' mV';
+    $('cells').innerHTML = d.cells_mv.map((mv,i)=>{
+      const pct = Math.max(2,Math.min(100,((mv-3000)/(3650-3000))*100));
+      const cls = mv===mx?'hi':mv===mn?'lo':'';
+      return `<div class="cellrow ${cls}"><span class="name">C${i+1}</span>
+        <span class="bar"><div style="width:${pct}%"></div></span>
+        <span class="mv">${(mv/1000).toFixed(3)} V</span></div>`;
+    }).join('');
+  }
+
+  if(d.temps_c && d.temps_c.length){
+    const roles=['board','cell','cell'];  // tentative — confirm by which climbs under load
+    const arr=d.temps_c, mn=Math.min(...arr), mx=Math.max(...arr);
+    $('temps').innerHTML = arr.map((t,i)=>{
+      const hot = arr.length>1 && t===mx && (mx-mn)>=0.3;
+      return `<div class="trow"><span class="tn">T${i+1}</span>`+
+             `<span class="tr">${roles[i]||''}</span>`+
+             `<b${hot?' style="color:var(--amber)"':''}>${t.toFixed(1)} °C</b></div>`;
+    }).join('');
+    $('tspread').textContent = arr.length>1 ? 'Spread '+(mx-mn).toFixed(1)+' °C' : '';
+  }
+
+  const h=[];
+  h.push(`<span class="chip ${d.charge_fet?'on':'warn'}">Charge ${d.charge_fet?'enabled':'disabled'}</span>`);
+  h.push(`<span class="chip ${d.discharge_fet?'on':'warn'}">Discharge ${d.discharge_fet?'enabled':'disabled'}</span>`);
+  paintFets(d);
+  if(d.faults && d.faults.length) d.faults.forEach(x=>h.push(`<span class="chip bad">${x}</span>`));
+  else h.push(`<span class="chip on">No faults</span>`);
+  $('health').innerHTML=h.join('');
+  if(d.cycles!=null) $('cycles').textContent=d.cycles;
+  if(d.prod_date) $('mfd').textContent=d.prod_date;
+
+  { // prefer the device-computed age (the Pico has no real clock)
+    const age = d.age_s!=null ? d.age_s : (d.updated ? Math.round(Date.now()/1000-d.updated) : null);
+    if(age!=null) $('age').textContent='Last reading '+(age<2?'just now':age+'s ago'); }
+
+  const st=d.stats; if(!st) return;
+  // time remaining
+  const fmtH=h=>{ if(h>240) return '> 10 days'; const m=Math.round(h*60);
+    return m<60? m+' min' : Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' m'; };
+  if(st.time_to_empty_h!=null) $('eta').innerHTML=`≈ <b>${fmtH(st.time_to_empty_h)}</b> to empty at ${(-st.avg_current).toFixed(1)} A avg`;
+  else if(st.time_to_full_h!=null && d.soc>=100) $('eta').innerHTML=`Full · floating at +${st.avg_current.toFixed(1)} A`;
+  else if(st.time_to_full_h!=null) $('eta').innerHTML=`≈ <b>${fmtH(st.time_to_full_h)}</b> to full at ${st.avg_current.toFixed(1)} A avg`;
+  else $('eta').textContent = d.soc>=100 ? 'Full · no load' : 'Idle · no significant load';
+  // energy
+  $('whin').textContent=st.wh_in.toFixed(0); $('ahin').textContent=st.ah_in.toFixed(1)+' Ah';
+  $('whout').textContent=st.wh_out.toFixed(0); $('ahout').textContent=st.ah_out.toFixed(1)+' Ah';
+  const net=st.wh_in-st.wh_out; $('whnet').textContent=(net>=0?'+':'')+net.toFixed(0)+' Wh';
+  $('whnet').className=net>0?'charging':net<0?'discharging':'';
+  $('since').textContent = st.since ? 'Since '+new Date(st.since*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+                         : (st.uptime_s!=null ? 'Since boot ('+Math.round(st.uptime_s/60)+' min ago)' : 'Since boot');
+  // extremes
+  const rng=(k,f,u)=>{const [lo,hi]=st.ext[k]||[]; return lo==null?'–':`${f(lo)} – ${f(hi)}${u}`;};
+  $('xv').textContent=rng('v',x=>x.toFixed(2),' V');
+  $('xa').textContent=rng('a',x=>x.toFixed(1),' A');
+  $('xsoc').textContent=rng('soc',x=>x,' %');
+  $('xt').textContent=rng('t',x=>x.toFixed(1),' °C');
+}
+
+let trendRange='hour';
+// 1 hour comes from the fine tier held in RAM (a row every ~12 s); a day and a
+// week come from the 10-minute rows on flash. Each view is clipped to its own
+// window so the axis means what the button says - the fine tier can hold a
+// little over an hour, and the flash file a little over seven days.
+const TREND_WINDOW={hour:3600, day:86400, week:7*86400};
+async function drawTrend(){
+  let pts, coarse=false;
+  try{
+    if(trendRange==='hour'){
+      pts=await (await fetch('/api/history',{cache:'no-store'})).json();
+      // Straight after a restart the RAM tier is empty, so fall back to the
+      // flash rows rather than showing nothing - marked as coarse, since they
+      // are ten minutes apart.
+      if(!Array.isArray(pts) || pts.length<2){
+        const r=await fetch('/api/history/long',{cache:'no-store'});
+        if(r.ok){ pts=await r.json(); coarse=true; }
+      }
+    } else {
+      const resp=await fetch('/api/history/long',{cache:'no-store'});
+      if(!resp.ok) throw new Error('no long history');
+      pts=await resp.json();
+    }
+    if(Array.isArray(pts)){
+      const cut=Date.now()/1000-TREND_WINDOW[trendRange];
+      const inWindow=pts.filter(p=>p[0]>=cut);
+      if(inWindow.length>=2) pts=inWindow;      // else show what little there is
+    }
+  }catch(e){
+    $('graph').innerHTML=`<text x="300" y="85" fill="#8b98a9" font-size="12" text-anchor="middle">Long history not available here</text>`;
+    return;
+  }
+  if(!Array.isArray(pts)) return;
+  const W=600,H=170,L=34,R=34,T=8,B=18, w=W-L-R, h=H-T-B;
+  const svg=$('graph');
+  if(pts.length<2){ svg.innerHTML=`<text x="${W/2}" y="${H/2}" fill="#8b98a9" font-size="12" text-anchor="middle">Collecting data…</text>`; return; }
+  const t0=pts[0][0], t1=pts[pts.length-1][0], span=Math.max(t1-t0,60);
+  const amps=pts.map(p=>p[2]); let amax=Math.max(1,...amps.map(Math.abs)); amax=Math.ceil(amax);
+  const X=t=>L+(t-t0)/span*w, YA=a=>T+h/2-(a/amax)*(h/2), YS=s=>T+h-(s/100)*h;
+  const zero=YA(0);
+  const path=(f)=>pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+f(p).toFixed(1)).join(' ');
+  const area=path(p=>YA(p[2]))+` L${X(t1).toFixed(1)} ${zero} L${X(t0).toFixed(1)} ${zero} Z`;
+  const soc=pts.filter(p=>p[3]!=null);
+  const mins=Math.round(span/60);
+  const label = mins<120 ? `last ${mins} min`
+              : mins<2880 ? `last ${(mins/60).toFixed(1)} h`
+              : `last ${(mins/1440).toFixed(1)} days`;
+  $('span').textContent = label + (coarse ? ' · 10 min steps' : '');
+  svg.innerHTML=`
+    <defs><clipPath id="up"><rect x="0" y="0" width="${W}" height="${zero}"/></clipPath>
+          <clipPath id="dn"><rect x="0" y="${zero}" width="${W}" height="${H-zero}"/></clipPath></defs>
+    <line x1="${L}" x2="${W-R}" y1="${zero}" y2="${zero}" stroke="#2a3140"/>
+    <path d="${area}" fill="#3fb950" fill-opacity=".25" stroke="#3fb950" stroke-width="1.2" clip-path="url(#up)" vector-effect="non-scaling-stroke"/>
+    <path d="${area}" fill="#d29922" fill-opacity=".25" stroke="#d29922" stroke-width="1.2" clip-path="url(#dn)" vector-effect="non-scaling-stroke"/>
+    ${soc.length>1?`<path d="${soc.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+YS(p[3]).toFixed(1)).join(' ')}" fill="none" stroke="#58a6ff" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`:''}
+    <g fill="#8b98a9" font-size="10" font-family="sans-serif">
+      <text x="${L-4}" y="${T+9}" text-anchor="end">+${amax}</text>
+      <text x="${L-4}" y="${zero+3}" text-anchor="end">0</text>
+      <text x="${L-4}" y="${T+h}" text-anchor="end">−${amax}</text>
+      <text x="${W-R+4}" y="${T+9}" fill="#58a6ff">100</text>
+      <text x="${W-R+4}" y="${T+h}" fill="#58a6ff">0</text>
+      <text x="${L}" y="${H-4}">${new Date(t0*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</text>
+      <text x="${W-R}" y="${H-4}" text-anchor="end">${new Date(t1*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</text>
+    </g>`;
+}
+
+function setStatus(ok,txt){ $('status').className=ok?'ok':''; $('statustext').textContent=txt; }
+
+function renderVictron(v, r){
+  const ok=!!v.connected;
+  $('vstatus').className=ok?'ok':''; $('vstatustext').textContent= ok?'Mains': v.stale?'Mains off':'Mains…';
+  if(v.model) $('vmodel').textContent=v.model.replace(/ \(\d+\)$/,'');
+  if(ok){
+    $('vchg').textContent=(v.current??0).toFixed(2); $('vchgw').textContent=(v.power_w??0).toFixed(0); $('vv').textContent=(v.voltage??0).toFixed(1);
+    $('vstate').textContent=v.state||'–'; $('vstate').hidden=false;
+    $('verr').textContent=v.error||''; $('verr').className='chip '+(v.error&&v.error!=='No Error'?'bad':'on');
+  } else {
+    $('vchg').textContent='–'; $('vchgw').textContent='–'; $('vv').textContent='–';
+    $('vstate').textContent='Not plugged in'; $('verr').textContent=''; $('verr').className='chip';
+  }
+  // total charge into battery = DC-DC + mains
+  const rc = (r.connected && r.charge_a!=null)? r.charge_a : 0;
+  const vc = ok && v.current!=null ? v.current : 0;
+  if(r.connected || ok){
+    $('totchg').textContent=(rc+vc).toFixed(2);
+    $('totbreak').textContent=`${rc.toFixed(2)} A DC-DC + ${vc.toFixed(2)} A mains`;
+  } else { $('totchg').textContent='–'; $('totbreak').textContent='No charger connected'; }
+}
+
+function renderRenogy(r, dv){
+  // true load (needs both devices fresh)
+  if(dv.load_a!=null){ $('load').textContent=dv.load_a.toFixed(2); $('loadw').textContent=dv.load_w.toFixed(0);
+    $('loadnote').textContent='Charger in − battery net'; }
+  else { $('load').textContent='–'; $('loadw').textContent='–'; $('loadnote').textContent='Needs both devices'; }
+
+  const ok=!!r.connected;
+  $('rstatus').className=ok?'ok':''; $('rstatustext').textContent= ok?'DC-DC': r.error?'DC-DC: '+r.error.slice(0,30):'DC-DC…';
+  if(!ok) return;
+  $('rchg').textContent=r.charge_a.toFixed(2); $('rchgw').textContent=r.charge_w.toFixed(0); $('rbv').textContent=r.battery_v.toFixed(1);
+  $('rstate').textContent=r.state; $('rsource').textContent= r.source==='None'?'No input':'from '+r.source.toLowerCase();
+  $('rtemp').textContent=`Unit ${r.ctrl_temp_c}° · batt ${r.batt_temp_c}°`;
+  $('altw').innerHTML= r.alt_a>0.05? r.alt_w : '<span class="off">0</span>';
+  $('altv').textContent=r.alt_v.toFixed(1); $('alta').textContent=r.alt_a.toFixed(2);
+  // 13.6, not 13.2: the DC-DC holds this line at 13.2 V trickle-charging the
+  // starter from the hook-up with the engine off.
+  $('altnote').textContent= r.alt_a>0.05 ? 'Engine running' : (r.alt_v>13.6?'Engine on, not charging':'Engine off');
+  $('solw').innerHTML= r.solar_a>0.05? r.solar_w : '<span class="off">0</span>';
+  $('solv').textContent=r.solar_v.toFixed(1); $('sola').textContent=r.solar_a.toFixed(2);
+  $('rwh').textContent=r.today_chg_wh; $('rah').textContent=r.today_chg_ah;
+  $('rtoday').textContent=`${r.today_min_v.toFixed(1)} – ${r.today_max_v.toFixed(1)} V · ${r.today_chg_ah} Ah in`;
+  $('rpeak').textContent=`${r.today_max_chg_a.toFixed(1)} A · ${r.today_max_chg_w} W`;
+  $('rlife').textContent=`${r.run_days} days · ${r.full_charges} full charges · ${r.total_gen_kwh} kWh`;
+  $('rfaults').innerHTML = r.faults.length ? r.faults.map(f=>`<span class="chip bad">${f}</span>`).join('') : '<span class="chip on">No faults</span>';
+}
+
+tick(); setInterval(tick,2000);
+document.querySelectorAll('.rbtn').forEach(b=>b.addEventListener('click',()=>{
+  trendRange=b.dataset.range;
+  document.querySelectorAll('.rbtn').forEach(x=>x.classList.toggle('sel',x===b));
+  drawTrend();
+}));
+drawTrend(); setInterval(drawTrend,10000);
+
+// ---- battery MOSFET control ------------------------------------------------
+// The pack's own charge/discharge switches. Charge is safe to toggle from here.
+// Discharge is not: it cuts the van's 12 V supply, which on this install powers
+// the hub itself, so it can only be turned back on from the BMS phone app.
+let fetBusy = false, storageOn = false, lastFet = {};
+
+function paintFets(d){
+  lastFet = d || {};
+  const cb = document.getElementById('fet-charge');
+  const db = document.getElementById('fet-discharge');
+  if(!cb || !db) return;
+  cb.textContent = d.charge_fet ? 'Charge: on' : 'Charge: off';
+  cb.className = 'btn ' + (d.charge_fet ? 'on' : 'off');
+  db.textContent = d.discharge_fet ? 'Discharge: on' : 'Discharge: off';
+  db.className = 'btn ' + (d.discharge_fet ? 'on' : 'off');
+  const st = d.storage || {};
+  storageOn = !!st.on;
+  const sb = document.getElementById('storage');
+  if(sb){
+    sb.textContent = storageOn
+      ? ('Storage mode: on (' + (st.target||80) + ' %)' + (st.holding ? ' · holding' : ''))
+      : 'Storage mode: off';
+    sb.className = 'btn ' + (storageOn ? (st.holding ? 'off' : 'on') : '');
+  }
+  const tgt = document.getElementById('storagetgt');
+  if(tgt && st.target && document.activeElement !== tgt) tgt.value = st.target;
+  const res = document.getElementById('fetres');
+  if(res && st.last && !fetBusy) res.textContent = 'Storage mode: ' + st.last;
+}
+
+async function postFet(body){
+  const res = document.getElementById('fetres');
+  fetBusy = true; res.textContent = 'Talking to the battery…';
+  ['fet-charge','fet-discharge','storage'].forEach(id=>{
+    const b=document.getElementById(id); if(b) b.disabled=true; });
+  try{
+    const r = await (await fetch('/api/bms/fet', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})).json();
+    if(r.ok){
+      res.textContent = 'Battery updated.';
+      if(r.state) paintFets(Object.assign({}, lastFet, r.state));
+    } else {
+      res.textContent = 'Not changed: ' + (r.error || 'the battery refused');
+    }
+  }catch(e){ res.textContent = 'Could not reach the hub: ' + e.message; }
+  ['fet-charge','fet-discharge','storage'].forEach(id=>{
+    const b=document.getElementById(id); if(b) b.disabled=false; });
+  fetBusy = false;
+}
+
+document.getElementById('fet-charge').addEventListener('click', ()=>{
+  const on = !lastFet.charge_fet;
+  let msg = on ? 'Allow the battery to charge again?'
+               : 'Stop the battery charging?\n\nSolar and the alternator will no longer put anything in.';
+  if(!on && storageOn) msg += '\n\nStorage mode will also be switched off.';
+  if(!confirm(msg)) return;
+  postFet({charge:on});
+});
+
+document.getElementById('fet-discharge').addEventListener('click', ()=>{
+  const on = !lastFet.discharge_fet;
+  if(on){
+    if(!confirm('Allow the battery to supply the van again?')) return;
+    postFet({discharge:true});
+    return;
+  }
+  // One-way door: typed confirmation, not just an OK button.
+  const typed = prompt(
+    'This turns OFF the battery output.\n\n'
+    + 'Everything running from the leisure battery stops — including this hub, '
+    + 'so you will NOT be able to switch it back on from this page. '
+    + 'You will need the BMS app over Bluetooth.\n\n'
+    + 'Type CUT POWER to continue.');
+  if(typed !== 'CUT POWER'){
+    document.getElementById('fetres').textContent = 'Cancelled — battery output left on.';
+    return;
+  }
+  postFet({discharge:false, confirm:'CUT POWER'});
+});
+
+document.getElementById('storage').addEventListener('click', async ()=>{
+  const tgt = parseInt(document.getElementById('storagetgt').value, 10) || 80;
+  const on = !storageOn;
+  if(on && !confirm('Hold the battery at about ' + tgt + ' % for storage?\n\n'
+      + 'Charging is switched off once it reaches ' + tgt + ' %, and allowed again if it '
+      + 'falls to ' + (tgt-5) + ' %. The van keeps its 12 V supply throughout.\n\n'
+      + 'Switching storage mode off later puts charging back on automatically.')) return;
+  const res = document.getElementById('fetres');
+  fetBusy = true; res.textContent = 'Saving…';
+  try{
+    const r = await (await fetch('/api/storage', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({on:on, target:tgt})})).json();
+    res.textContent = r.ok
+      ? (on ? 'Storage mode armed.'
+            : (r.charge_restored ? 'Storage mode off — charging switched back on.'
+                                 : 'Storage mode off.'))
+      : ('Not saved: ' + (r.error||'refused'));
+  }catch(e){ res.textContent = 'Could not reach the hub: ' + e.message; }
+  fetBusy = false;
+});
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

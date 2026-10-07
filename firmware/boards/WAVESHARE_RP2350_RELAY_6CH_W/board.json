@@ -1,0 +1,10 @@
+{
+    "deploy": ["../deploy.md"],
+    "docs": "",
+    "features": ["BLE", "WiFi", "External Flash", "USB-C"],
+    "images": [],
+    "mcu": "rp2350",
+    "product": "Waveshare RP2350-Relay-6CH-W",
+    "url": "https://www.waveshare.com/wiki/RP2350-Relay-6CH",
+    "vendor": "Waveshare"
+}

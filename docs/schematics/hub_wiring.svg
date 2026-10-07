@@ -1,0 +1,173 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 960' width='1400' height='960'>
+<rect width='100%' height='100%' fill='#ffffff'/>
+<text x='30' y='40' font-family='DejaVu Sans, Arial, sans-serif' font-size='22' fill='#1d1f24' text-anchor='start' font-weight='bold'>CamperDash hub - wiring</text>
+<text x='30' y='62' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#6b6f7a' text-anchor='start' font-weight='normal'>Waveshare RP2350-Relay-6CH-W. Pins as used by the firmware; check the board's own silkscreen and datasheet before wiring.</text>
+<rect x='470' y='110' width='420' height='720' rx='8' fill='#f6f7f9' stroke='#1d1f24' stroke-width='2'/>
+<text x='680' y='132' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#1d1f24' text-anchor='middle' font-weight='bold'>HUB  Waveshare RP2350-Relay-6CH-W</text>
+<text x='680' y='150' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>RP2350B, 16 MB flash, CYW43439 Wi-Fi + Bluetooth LE</text>
+<text x='680' y='176' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>On board: buzzer GPIO23, RGB LED (WS2812) GPIO36, USB-C</text>
+<rect x='465' y='275' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='284' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>DC + (7-36 V)</text>
+<rect x='465' y='305' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='314' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>DC -</text>
+<rect x='465' y='395' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='404' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>RS485 A+</text>
+<rect x='465' y='425' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='434' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>RS485 B-</text>
+<rect x='465' y='455' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='464' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>RS485 GND</text>
+<rect x='465' y='545' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='554' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>3V3</text>
+<rect x='465' y='575' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='584' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GND</text>
+<rect x='465' y='605' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='614' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GPIO4  I2C SDA</text>
+<rect x='465' y='635' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='644' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GPIO5  I2C SCL</text>
+<rect x='465' y='695' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='704' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GPIO0  UART0 TX</text>
+<rect x='465' y='725' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='734' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GPIO1  UART0 RX</text>
+<rect x='465' y='785' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='480' y='794' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='start' font-weight='normal'>GPIO6  1-Wire (planned)</text>
+<rect x='885' y='245' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='254' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH1 COM</text>
+<rect x='885' y='271' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='280' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH1 NO</text>
+<text x='740' y='264' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 1 = GPIO26</text>
+<rect x='885' y='335' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='344' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH2 COM</text>
+<rect x='885' y='361' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='370' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH2 NO</text>
+<text x='740' y='354' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 2 = GPIO27</text>
+<rect x='885' y='425' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='434' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH3 COM</text>
+<rect x='885' y='451' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='460' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH3 NO</text>
+<text x='740' y='444' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 3 = GPIO28</text>
+<rect x='885' y='515' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='524' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH4 COM</text>
+<rect x='885' y='541' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='550' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH4 NO</text>
+<text x='740' y='534' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 4 = GPIO29</text>
+<rect x='885' y='605' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='614' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH5 COM</text>
+<rect x='885' y='631' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='640' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH5 NO</text>
+<text x='740' y='624' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 5 = GPIO30</text>
+<rect x='885' y='695' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='704' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH6 COM</text>
+<rect x='885' y='721' width='10' height='10' fill='#ffffff' stroke='#1d1f24'/>
+<text x='880' y='730' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#1d1f24' text-anchor='end' font-weight='normal'>CH6 NO</text>
+<text x='740' y='714' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='end' font-weight='normal'>relay 6 = GPIO31</text>
+<path d='M530,110 l0,-30 m-12,0 l12,14 l12,-14' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<text x='550' y='92' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>Wi-Fi / BLE antenna (SMA)</text>
+<rect x='60' y='150' width='190' height='110' rx='8' fill='#fdf2f1' stroke='#c0392b' stroke-width='2'/>
+<text x='155' y='172' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#c0392b' text-anchor='middle' font-weight='bold'>LEISURE BATTERY</text>
+<text x='155' y='190' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>12 V lithium (Fogstar), BMS</text>
+<path d='M250,190 L330,190 L330,280 L465,280' fill='none' stroke='#c0392b' stroke-width='3'/>
+<rect x='360' y='273' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='375' y='268' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>2 A</text>
+<path d='M250,230 L300,230 L300,310 L465,310' fill='none' stroke='#1d1f24' stroke-width='3'/>
+<text x='60' y='278' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>Hub draws well under 0.5 A;</text>
+<text x='60' y='293' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>fuse close to the battery.</text>
+<path d='M1000,160 L1000,740' fill='none' stroke='#c0392b' stroke-width='3'/>
+<text x='1008' y='760' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='start' font-weight='normal'>+12 V fused distribution</text>
+<path d='M895,250 L1000,250' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='250' r='4' fill='#c0392b'/>
+<rect x='930' y='243' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='238' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,276 L1120,276' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='259' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='281' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Water pump</text>
+<path d='M1270,276 L1320,276 L1320,296' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,296 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<path d='M895,340 L1000,340' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='340' r='4' fill='#c0392b'/>
+<rect x='930' y='333' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='328' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,366 L1120,366' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='349' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='371' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Fridge</text>
+<path d='M1270,366 L1320,366 L1320,386' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,386 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<path d='M895,430 L1000,430' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='430' r='4' fill='#c0392b'/>
+<rect x='930' y='423' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='418' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,456 L1120,456' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='439' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='461' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Garage light</text>
+<path d='M1270,456 L1320,456 L1320,476' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,476 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<path d='M895,520 L1000,520' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='520' r='4' fill='#c0392b'/>
+<rect x='930' y='513' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='508' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,546 L1120,546' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='529' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='551' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Inverter (remote line)</text>
+<path d='M1270,546 L1320,546 L1320,566' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,566 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<path d='M895,610 L1000,610' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='610' r='4' fill='#c0392b'/>
+<rect x='930' y='603' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='598' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,636 L1120,636' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='619' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='641' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Master lights</text>
+<path d='M1270,636 L1320,636 L1320,656' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,656 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<path d='M895,700 L1000,700' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='1000' cy='700' r='4' fill='#c0392b'/>
+<rect x='930' y='693' width='30' height='14' fill='#ffffff' stroke='#c0392b' stroke-width='2'/>
+<text x='945' y='688' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#c0392b' text-anchor='middle' font-weight='normal'>per load</text>
+<path d='M895,726 L1120,726' fill='none' stroke='#b7791f' stroke-width='2'/>
+<rect x='1120' y='709' width='150' height='34' rx='6' fill='#fff8ec' stroke='#b7791f' stroke-width='2'/>
+<text x='1195' y='731' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='middle' font-weight='normal'>Fuel pump</text>
+<path d='M1270,726 L1320,726 L1320,746' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M1308,746 l24,0 m-18,5 l12,0 m-7,5 l2,0' stroke='#1d1f24' stroke-width='2'/>
+<text x='1120' y='100' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>Loads: the relay closes COM to NO.</text>
+<text x='1120' y='116' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>Names and icons are set in Settings.</text>
+<rect x='90' y='470' width='220' height='90' rx='8' fill='#eef4fb' stroke='#2c6fbb' stroke-width='2'/>
+<text x='200' y='492' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#2c6fbb' text-anchor='middle' font-weight='bold'>ACCELEROMETER</text>
+<text x='200' y='510' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>MPU-6050 (0x68) or LIS3DH (0x19)</text>
+<path d='M310,500 L400,500 L400,610 L465,610' fill='none' stroke='#2c6fbb' stroke-width='2'/>
+<path d='M310,525 L390,525 L390,640 L465,640' fill='none' stroke='#2c6fbb' stroke-width='2'/>
+<text x='315' y='494' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#2c6fbb' text-anchor='start' font-weight='normal'>SDA</text>
+<text x='315' y='519' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#2c6fbb' text-anchor='start' font-weight='normal'>SCL</text>
+<rect x='90' y='600' width='220' height='80' rx='8' fill='#eff8f2' stroke='#2e8b57' stroke-width='2'/>
+<text x='200' y='622' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#2e8b57' text-anchor='middle' font-weight='bold'>GPS</text>
+<text x='200' y='640' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>u-blox NEO-7M, NMEA 9600</text>
+<path d='M310,625 L380,625 L380,730 L465,730' fill='none' stroke='#2e8b57' stroke-width='2'/>
+<text x='315' y='619' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#2e8b57' text-anchor='start' font-weight='normal'>TX -> hub RX</text>
+<path d='M310,650 L370,650 L370,700 L465,700' fill='none' stroke='#2e8b57' stroke-width='2' stroke-dasharray='5,4'/>
+<text x='315' y='664' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#2e8b57' text-anchor='start' font-weight='normal'>RX (optional)</text>
+<rect x='90' y='720' width='220' height='70' rx='8' fill='#f4f4f6' stroke='#6b6f7a' stroke-width='2'/>
+<text x='200' y='742' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#6b6f7a' text-anchor='middle' font-weight='bold'>TEMP PROBE</text>
+<text x='200' y='760' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>DS18B20 (planned)</text>
+<path d='M310,750 L465,750 L465,790' fill='none' stroke='#6b6f7a' stroke-width='2' stroke-dasharray='5,4'/>
+<text x='315' y='744' font-family='DejaVu Sans, Arial, sans-serif' font-size='10' fill='#6b6f7a' text-anchor='start' font-weight='normal'>DQ, 4.7k to 3V3</text>
+<path d='M465,550 L430,550 L430,860 L60,860 L60,480 L90,480' fill='none' stroke='#c0392b' stroke-width='2'/>
+<path d='M60,610 L90,610' fill='none' stroke='#c0392b' stroke-width='2'/>
+<path d='M60,730 L90,730' fill='none' stroke='#c0392b' stroke-width='2'/>
+<circle cx='60' cy='610' r='4' fill='#c0392b'/>
+<circle cx='60' cy='730' r='4' fill='#c0392b'/>
+<path d='M465,580 L440,580 L440,875 L45,875 L45,545 L90,545' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M45,668 L90,668' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<path d='M45,778 L90,778' fill='none' stroke='#1d1f24' stroke-width='2'/>
+<circle cx='45' cy='668' r='4' fill='#1d1f24'/>
+<circle cx='45' cy='778' r='4' fill='#1d1f24'/>
+<text x='40' y='900' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>3V3 and GND from the hub's header feed</text>
+<text x='40' y='915' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>every sensor (red = 3V3, black = GND).</text>
+<rect x='60' y='320' width='190' height='90' rx='8' fill='#f4f4f6' stroke='#6b6f7a' stroke-width='2'/>
+<text x='155' y='342' font-family='DejaVu Sans, Arial, sans-serif' font-size='15' fill='#6b6f7a' text-anchor='middle' font-weight='bold'>RS485 (spare)</text>
+<text x='155' y='360' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='middle' font-weight='normal'>Modbus RTU, auto-direction</text>
+<path d='M250,345 L290,345 L290,400 L465,400' fill='none' stroke='#6b6f7a' stroke-width='2' stroke-dasharray='5,4'/>
+<path d='M250,367 L300,367 L300,430 L465,430' fill='none' stroke='#6b6f7a' stroke-width='2' stroke-dasharray='5,4'/>
+<path d='M250,389 L310,389 L310,460 L465,460' fill='none' stroke='#6b6f7a' stroke-width='2' stroke-dasharray='5,4'/>
+<text x='60' y='430' font-family='DejaVu Sans, Arial, sans-serif' font-size='11' fill='#6b6f7a' text-anchor='start' font-weight='normal'>UART1 GPIO24/25; driver pico/rs485.py</text>
+<text x='470' y='880' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='start' font-weight='normal'>Wireless, no wiring: Fogstar BMS, Renogy DC-DC (BT-2), JP diesel heater over Bluetooth LE;</text>
+<text x='470' y='898' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='start' font-weight='normal'>Victron Blue Smart IP22 charger by its encrypted Bluetooth adverts; the 4" display, phones and the</text>
+<text x='470' y='916' font-family='DejaVu Sans, Arial, sans-serif' font-size='12' fill='#1d1f24' text-anchor='start' font-weight='normal'>van's head unit over Wi-Fi (the hub's hotspot "Camperlux", 192.168.4.1, or a shared network).</text>
+</svg>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IntrepidVan · Heater</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header>
+  <h1><img class="logo" src="/logo.jpg" alt="">Intrepid<span class="dot">Van</span> · Heater</h1>
+  <nav><a href="/">&lsaquo; Back to the van</a><a href="/settings">Settings</a></nav>
+</header>
+<div class="statuses">
+  <div id="linkst" class="busy"><span class="led"></span><span id="linktext">Connecting to the heater…</span></div>
+  <div id="probest"><span class="led"></span><span id="probetext">Temperature probe</span></div>
+</div>
+
+<div class="grid">
+
+<div class="card wide scenecard">
+<svg id="scene" viewBox="0 0 920 344" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="scenetitle">
+  <title id="scenetitle">Live heater diagram</title>
+  <defs>
+    <linearGradient id="gflame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ff6a00"/><stop offset="55%" stop-color="#ff9d3c"/><stop offset="100%" stop-color="#ffd98a"/>
+    </linearGradient>
+    <radialGradient id="gglow"><stop offset="0%" stop-color="#ff9d3c" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#ff9d3c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="gwater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4aa8ff"/><stop offset="100%" stop-color="#2b6fb0"/></linearGradient>
+    <clipPath id="tankclip"><rect x="294" y="74" width="132" height="104" rx="10"/></clipPath>
+  </defs>
+
+  <!-- ================= heater unit ================= -->
+  <rect class="glass" x="34" y="70" width="176" height="216" rx="18"/>
+  <text class="cap" x="122" y="96" text-anchor="middle">Diesel heater</text>
+  <circle cx="122" cy="170" r="50" fill="#100e13" stroke="var(--line)" stroke-width="2"/>
+  <circle class="burnglow" cx="122" cy="174" r="54" fill="url(#gglow)"/>
+  <g class="flame">
+    <path d="M122 204 C 94 182, 103 156, 122 126 C 141 156, 150 182, 122 204 Z" fill="url(#gflame)"/>
+    <path d="M122 202 C 109 187, 114 170, 122 152 C 130 170, 135 187, 122 202 Z" fill="#ffe6a8" opacity=".92"/>
+  </g>
+  <g class="element">
+    <path d="M92 196 h 8 l 6 -14 l 10 28 l 10 -28 l 10 28 l 6 -14 h 8"
+          stroke="#ff7a45" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text class="cap" x="122" y="252" text-anchor="middle" id="sv-burner">Burner off</text>
+  <!-- exhaust -->
+  <path class="pipe" d="M122 286 V 316" stroke-width="8"/>
+  <circle class="puff" cx="122" cy="318" r="7" fill="var(--muted)"/>
+  <circle class="puff" cx="122" cy="318" r="6" fill="var(--muted)"/>
+  <circle class="puff" cx="122" cy="318" r="5" fill="var(--muted)"/>
+
+  <!-- ================= water lane (top) ================= -->
+  <path class="pipe" d="M210 126 H 262"/>
+  <path class="waterflow" d="M266 126 H 286"/>
+  <!-- tank -->
+  <rect class="glass" x="290" y="70" width="140" height="112" rx="12"/>
+  <rect class="tankglow" x="290" y="70" width="140" height="112" rx="12" fill="var(--flame)"/>
+  <g clip-path="url(#tankclip)">
+    <rect id="sv-level" x="294" y="108" width="132" height="70" fill="url(#gwater)" opacity=".62"/>
+    <circle class="bubble" cx="320" cy="168" r="5" fill="#cfe9ff"/>
+    <circle class="bubble" cx="346" cy="172" r="4" fill="#cfe9ff"/>
+    <circle class="bubble" cx="372" cy="168" r="6" fill="#cfe9ff"/>
+    <circle class="bubble" cx="398" cy="172" r="4" fill="#cfe9ff"/>
+    <circle class="bubble" cx="358" cy="174" r="3" fill="#cfe9ff"/>
+  </g>
+  <path class="steam" d="M330 66 c -7 -9 7 -14 0 -24" stroke="#cfe9ff" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path class="steam" d="M360 66 c -7 -9 7 -14 0 -24" stroke="#cfe9ff" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path class="steam" d="M390 66 c -7 -9 7 -14 0 -24" stroke="#cfe9ff" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <text class="med" x="360" y="114" text-anchor="middle" id="sv-wtemp" style="font-size:22px">-</text>
+  <text class="cap" x="360" y="200" text-anchor="middle">Water tank</text>
+  <path class="waterflow" d="M434 126 H 560"/>
+  <!-- hot water outlet -->
+  <rect class="glass" x="576" y="68" width="310" height="116" rx="18"/>
+  <rect class="tankglow" x="576" y="68" width="310" height="116" rx="18" fill="var(--flame)"/>
+  <text class="cap" x="600" y="96">Hot water</text>
+  <text class="big" x="600" y="140" id="sv-water">off</text>
+  <text class="cap" x="600" y="166" id="sv-watersub" style="text-transform:none">preset</text>
+  <g transform="translate(808,124)">
+    <path d="M-8 -34 V 6 H 22" stroke="var(--line)" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M-24 -34 H 8" stroke="var(--line)" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="22" cy="26" r="4" fill="var(--line)"/><circle cx="22" cy="40" r="3" fill="var(--line)"/>
+  </g>
+
+  <!-- ================= air lane (bottom) ================= -->
+  <path class="pipe" d="M210 264 H 268"/>
+  <path class="airflow" d="M272 264 H 316"/>
+  <circle cx="360" cy="264" r="38" fill="#100e13" stroke="var(--line)" stroke-width="2"/>
+  <g class="fan">
+    <circle cx="360" cy="264" r="6" fill="var(--muted)"/>
+    <path d="M360 264 C 352 244, 336 238, 328 248 C 336 258, 350 262, 360 264 Z" fill="var(--muted)" opacity=".85"/>
+    <path d="M360 264 C 380 256, 386 240, 376 232 C 366 240, 362 254, 360 264 Z" fill="var(--muted)" opacity=".85"/>
+    <path d="M360 264 C 368 284, 384 290, 392 280 C 384 270, 370 266, 360 264 Z" fill="var(--muted)" opacity=".85"/>
+    <path d="M360 264 C 340 272, 334 288, 344 296 C 354 288, 358 274, 360 264 Z" fill="var(--muted)" opacity=".85"/>
+  </g>
+  <text class="cap" x="360" y="326" text-anchor="middle" id="sv-fan">Fan off</text>
+  <path class="airflow" d="M404 264 H 560"/>
+  <!-- cabin -->
+  <rect class="glass" x="576" y="192" width="310" height="144" rx="18"/>
+  <rect class="cabinglow" x="576" y="192" width="310" height="144" rx="18" fill="var(--flame)"/>
+  <text class="cap" x="600" y="220">Cabin air</text>
+  <text class="big" x="600" y="266" id="sv-cabin">-</text>
+  <text class="cap" x="600" y="294" id="sv-cabinsub" style="text-transform:none">measured at the heater</text>
+  <g stroke="var(--line)" stroke-width="3" fill="none" transform="translate(800,250)">
+    <path d="M-44 22 H 44 V -6 L 24 -24 H -44 Z"/>
+    <circle cx="-24" cy="26" r="8" fill="var(--panel2)"/><circle cx="26" cy="26" r="8" fill="var(--panel2)"/>
+  </g>
+</svg>
+<div class="sub" id="scenecap" style="text-align:center;margin:2px 0 6px">Reading the heater over Bluetooth…</div>
+</div>
+
+<div class="card wide">
+  <div class="label">Heater status · <span id="hmodel">–</span></div>
+  <div class="value"><span id="hstate">–</span></div>
+  <div class="sub" id="hmode">Reading the heater over Bluetooth…</div>
+  <div class="chips">
+    <span class="chip" id="hsupply">–</span>
+    <span class="chip" id="htemp2">–</span>
+    <span class="chip" id="hac">–</span>
+    <span class="chip" id="hfault">–</span>
+    <span class="chip" id="hwater2">–</span>
+    <span class="chip" id="hhx">–</span>
+    <span class="chip" id="hrun">–</span>
+  </div>
+</div>
+
+<div class="section">Controls</div>
+
+<div class="card wide">
+  <div class="modes">
+    <button class="tile" data-act="air">
+      <svg viewBox="0 0 24 24"><path d="M12 12c0-3 2-4 2-6a2.5 2.5 0 0 0-5 0c0 3 3 3 3 6z"/>
+        <path d="M12 12c3 0 4 2 6 2a2.5 2.5 0 0 0 0-5c-3 0-3 3-6 3z"/>
+        <path d="M12 12c0 3-2 4-2 6a2.5 2.5 0 0 0 5 0c0-3-3-3-3-6z"/>
+        <path d="M12 12c-3 0-4-2-6-2a2.5 2.5 0 0 0 0 5c3 0 3-3 6-3z"/></svg>
+      <b>Air heat</b><i>Warm air into the cabin</i></button>
+    <button class="tile" data-act="water">
+      <svg viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10z"/>
+        <path d="M9 14c1 1.4 2 1.4 3 0s2-1.4 3 0"/></svg>
+      <b>Water heat</b><i>Hot water only</i></button>
+    <button class="tile" data-act="combi">
+      <svg viewBox="0 0 24 24"><path d="M8 3s4 4.6 4 7.5A4 4 0 0 1 4 10.5C4 7.6 8 3 8 3z"/>
+        <path d="M17 12v-1a2 2 0 1 1 2 2h-2z"/><path d="M17 16v5"/><path d="M14 18h6"/></svg>
+      <b>Water + air</b><i>Both together</i></button>
+    <button class="tile" data-act="vent">
+      <svg viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h14a3 3 0 1 1-3 3"/><path d="M3 18h8"/></svg>
+      <b>Ventilate</b><i>Fan only, no flame</i></button>
+    <button class="tile" data-act="off">
+      <svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.5 7a8 8 0 1 0 11 0"/></svg>
+      <b>Off</b><i>Shut the heater down</i></button>
+  </div>
+
+  <div class="setrow">
+    <div class="set">
+      <div class="label">Air temperature</div>
+      <div class="step">
+        <button class="rnd" id="t-down" aria-label="Lower the air temperature">−</button>
+        <b><span id="t-val">20</span>°C</b>
+        <button class="rnd" id="t-up" aria-label="Raise the air temperature">+</button>
+      </div>
+    </div>
+    <div class="set">
+      <div class="label">Water temperature</div>
+      <div class="seg" id="seg-water">
+        <button data-w="1">40 °C</button><button data-w="2" class="sel">60 °C</button><button data-w="3">Boost</button>
+      </div>
+    </div>
+    <div class="set">
+      <div class="label">Fan speed</div>
+      <div class="seg" id="seg-fan">
+        <button data-f="1" class="sel">1</button><button data-f="2">2</button><button data-f="3">3</button><button data-f="4">4</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="set" style="margin-top:14px">
+    <div class="label">Energy source</div>
+    <div class="seg" id="seg-energy">
+      <button data-e="auto" class="sel">Auto</button>
+      <button data-e="0">Diesel</button>
+      <button data-e="1" class="needsac">Diesel + electric 1</button>
+      <button data-e="2" class="needsac">Diesel + electric 2</button>
+      <button data-e="3" class="needsac">Electric 1</button>
+      <button data-e="4" class="needsac">Electric 2</button>
+    </div>
+    <div class="sub" id="acnote">Checking for a mains hook-up…</div>
+  </div>
+
+  <div class="ctl" style="margin-top:14px">
+    <button class="btn" data-act="read">↻ Refresh from the heater</button>
+    <span class="sub" id="hresult" style="margin:0">No command sent yet</span>
+  </div>
+  <div class="sub">While this page is open it reads the heater every 60 s, and after every command; it stops as soon as you close or leave the page, so nothing holds the heater's Bluetooth in the background. Close the phone app first so the heater's Bluetooth is free.</div>
+</div>
+
+<div class="card">
+  <div class="label">Current settings on the heater</div>
+  <div class="kv"><span>Air target</span><b id="s-air">–</b></div>
+  <div class="kv"><span>Water</span><b id="s-water">–</b></div>
+  <div class="kv"><span>Fan</span><b id="s-fan">–</b></div>
+  <div class="kv"><span>Energy</span><b id="s-energy">–</b></div>
+  <div class="kv"><span>Up to temp</span><b id="s-eta">–</b></div>
+  <div class="sub" id="s-read">Not read yet</div>
+</div>
+
+<div class="card">
+  <div class="label">Van conditions</div>
+  <div class="kv"><span>Outside probe</span><b id="c-probe">–</b></div>
+  <div class="kv"><span>Heater air</span><b id="c-air">–</b></div>
+  <div class="kv"><span>Water tank</span><b id="c-water">–</b></div>
+  <div class="kv"><span>Battery</span><b id="c-soc">–</b></div>
+  <div class="sub">Probe is the DC-DC charger's external sensor</div>
+</div>
+
+<div class="card wide">
+  <div class="label">Frost protection (auto-heat)</div>
+  <div class="value"><span id="ah-state">–</span></div>
+  <div class="sub" id="ah-sub">Uses the DC-DC external temperature probe &mdash; works without internet</div>
+  <div class="ctl">
+    <label>Heat below <input id="ah-on" type="number" min="-20" max="25" value="5"> &deg;C</label>
+    <label>Stop above <input id="ah-off" type="number" min="-15" max="30" value="9"> &deg;C</label>
+  </div>
+  <div class="ctl">
+    <label>Heat to <input id="ah-target" type="number" min="5" max="35" value="18"> &deg;C</label>
+    <label>Min battery <input id="ah-soc" type="number" min="0" max="100" value="40"> %</label>
+    <label>Max run <input id="ah-max" type="number" min="10" max="720" value="180"> min</label>
+  </div>
+  <div class="ctl">
+    <button class="btn on" id="ah-arm">Arm</button>
+    <button class="btn off" id="ah-disarm">Disarm</button>
+    <button class="btn" id="ah-save">Save settings</button>
+  </div>
+  <div class="sub" id="ah-last"></div>
+</div>
+
+<div class="card wide">
+  <div class="label">Heater timers</div>
+  <div class="sub">Each starts the heater at its time with the automatic fuel choice (electric
+    on a live hook-up, diesel otherwise) and stops it after its run time. Skipped if the battery
+    is below frost protection's minimum. The same timers as on the van display.</div>
+  <div id="tm-list"></div>
+  <div class="ctl" style="margin-top:10px">
+    <button class="btn" id="tm-save">Save timers</button>
+    <span class="sub" id="tm-note" style="margin:0"></span>
+  </div>
+  <div class="sub" id="tm-wake"></div>
+</div>
+
+</div>
+
+<footer>Refreshes from the heater every 60 s while this page is open · <span id="age">–</span></footer>
+
+<script src="/common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const WATER={1:'40 °C',2:'60 °C',3:'Boost'};
+const ENERGY={0:'Diesel',1:'Diesel + electric 1',2:'Diesel + electric 2',3:'Electric 1',4:'Electric 2'};
+const WATER_TARGET={1:40,2:60};        // Boost has no published set point
+let inFlight=false;                    // one heater conversation at a time
+
+// Recent water-tank readings, used to work out how fast it is heating and
+// therefore how long is left. The tank is a big thermal mass, so it climbs
+// slowly and steadily - a straight-line fit over the last few reads is plenty.
+const wHist=[];
+function noteWater(c){
+  const now=Date.now();
+  if(c==null) return;
+  if(wHist.length && now-wHist[wHist.length-1].t < 20000) return;   // one sample per read
+  if(wHist.length && c < wHist[wHist.length-1].c - 2) wHist.length=0;  // cooled down: start again
+  wHist.push({t:now,c:c});
+  while(wHist.length>2 && now-wHist[0].t > 1800000) wHist.shift();  // forget over 30 min old
+  while(wHist.length>8) wHist.shift();
+}
+function waterRate(){                  // degrees per minute, least squares
+  if(wHist.length<3) return null;
+  const n=wHist.length, t0=wHist[0].t;
+  let sx=0,sy=0,sxx=0,sxy=0;
+  for(const p of wHist){ const x=(p.t-t0)/60000, y=p.c; sx+=x; sy+=y; sxx+=x*x; sxy+=x*y; }
+  const d=n*sxx-sx*sx;
+  if(!d) return null;
+  const spanMin=(wHist[n-1].t-t0)/60000;
+  if(spanMin<1.5) return null;         // too short a baseline to trust
+  return (n*sxy-sx*sy)/d;
+}
+// The burner heat exchanger climbs steeply while the flame is lit and goes flat
+// or falls as soon as it stops, so its trend - not the work mode - tells us
+// whether the heater is actually firing right now.
+const hxHist=[];
+function noteHx(c){
+  const now=Date.now();
+  if(c==null) return;
+  if(hxHist.length && now-hxHist[hxHist.length-1].t < 20000) return;
+  hxHist.push({t:now,c:c});
+  while(hxHist.length>2 && now-hxHist[0].t > 600000) hxHist.shift();   // last 10 min
+  while(hxHist.length>6) hxHist.shift();
+}
+function hxRate(){
+  if(hxHist.length<2) return null;
+  const a=hxHist[0], b=hxHist[hxHist.length-1], mins=(b.t-a.t)/60000;
+  if(mins<0.7) return null;
+  return (b.c-a.c)/mins;
+}
+// Status byte 14 is the host run state on this maker's air- and water-only
+// controllers, but this CR12 combi reports a constant 5 there even with the
+// flame out, so it is recorded for diagnosis only and the exchanger trend -
+// which was verified against a real burn - still decides.
+let runState=null, runStateCode=null;
+function isBurning(){
+  const r=hxRate();
+  if(r==null) return null;            // not enough history yet
+  return r > 0.5;                     // burning ~+3.5 C/min, idle ~0 or falling
+}
+
+
+function waterEta(cur,target){
+  const r=waterRate();
+  if(r==null||r<=0.05||target==null||cur==null||cur>=target) return null;
+  return {min:Math.max(1,Math.round((target-cur)/r)), rate:r};
+}
+const LABEL={off:'Off',air:'Air heat',water:'Water heat',combi:'Water + air',vent:'Ventilate',read:'Refresh'};
+// setEnergy is 'auto' (the hub picks: electric on a live hook-up, diesel
+// otherwise) or a number, 0-4, for a deliberate override.
+let setAir=20, setWater=2, setFan=1, setEnergy='auto', lastRead=0, lastProbe=null;
+// Whether a 230 V hook-up is live, taken from the mains charger - NOT from the
+// heater, whose AC byte claims mains when there is none. null = not known yet,
+// and unknown locks the element out just as absent does.
+let haveAC=null;
+
+function setLink(cls, text){ $('linkst').className=cls; $('linktext').textContent=text; }
+
+// ---- desired-setting controls -------------------------------------------
+function paintSettings(){
+  $('t-val').textContent=setAir;
+  document.querySelectorAll('#seg-water button').forEach(b=>b.classList.toggle('sel',+b.dataset.w===setWater));
+  document.querySelectorAll('#seg-fan button').forEach(b=>b.classList.toggle('sel',+b.dataset.f===setFan));
+  document.querySelectorAll('#seg-energy button').forEach(b=>b.classList.toggle('sel',b.dataset.e===String(setEnergy)));
+}
+
+// The electric element can only run off a 230 V hook-up, so lock those options
+// out unless the heater reports mains present. The hub enforces this too.
+function paintEnergyLock(){
+  const note=$('acnote');
+  document.querySelectorAll('#seg-energy button.needsac').forEach(b=>{ b.disabled = (haveAC!==true); });
+  // an electric override cannot outlive the hook-up: fall back to Auto,
+  // which then chooses diesel
+  if(haveAC!==true && setEnergy!=='auto' && setEnergy!==0){ setEnergy='auto'; paintSettings(); }
+  const auto = setEnergy==='auto';
+  if(haveAC===true){ note.className='sub'; note.textContent = auto
+      ? 'Auto: mains hook-up detected — the heater will use the electric element'
+      : 'Mains hook-up detected — the electric element is available'; }
+  else if(haveAC===false){ note.className='sub bad'; note.textContent = auto
+      ? 'Auto: no mains hook-up — the heater will use diesel'
+      : 'No mains hook-up — electric options are locked out, diesel only'; }
+  else { note.className='sub'; note.textContent = auto
+      ? 'Auto: diesel until a 230 V hook-up is detected'
+      : 'Plug in to a 230 V hook-up to use the electric element'; }
+}
+$('t-up').addEventListener('click',()=>{ setAir=Math.min(35,setAir+1); paintSettings(); });
+$('t-down').addEventListener('click',()=>{ setAir=Math.max(5,setAir-1); paintSettings(); });
+document.querySelectorAll('#seg-water button').forEach(b=>
+  b.addEventListener('click',()=>{ setWater=+b.dataset.w; paintSettings(); }));
+document.querySelectorAll('#seg-fan button').forEach(b=>
+  b.addEventListener('click',()=>{ setFan=+b.dataset.f; paintSettings(); }));
+document.querySelectorAll('#seg-energy button').forEach(b=>
+  b.addEventListener('click',()=>{
+    const e = b.dataset.e==='auto' ? 'auto' : +b.dataset.e;
+    if(e!=='auto' && e!==0 && haveAC!==true) return;   // belt and braces: the button is disabled too
+    setEnergy=e; paintSettings(); paintEnergyLock();
+  }));
+paintSettings(); paintEnergyLock();
+
+// ---- the animated scene --------------------------------------------------
+// mode codes: 3 water+air, 4 air, 5 water, 6 ventilation, 7 priming, 8 shutting down, 10 off
+const SCENE={3:['burn','airon','wateron'], 4:['burn','airon'], 5:['burn','wateron'],
+             6:['venton'], 7:['burn'], 8:['airon']};
+const CAPTION={3:'Burning — hot water and warm air',4:'Burning — warm air to the cabin',
+  5:'Burning — heating the water tank',6:'Ventilating — fan only, no flame',
+  7:'Priming the fuel line',8:'Shutting down — fan cooling the burner',10:'Standby — everything off'};
+
+function paintScene(h){
+  const sc=$('scene');
+  if(!h || !h.connected){
+    sc.setAttribute('class','offline');
+    $('sv-burner').textContent='Not read'; $('sv-fan').textContent='Not read';
+    $('sv-cabin').textContent='–'; $('sv-water').textContent='–';
+    $('scenecap').textContent='Heater not read yet';
+    return;
+  }
+  const code=h.mode_code, on=!!h.on;
+  // 0 diesel, 1/2 diesel + element, 3/4 element only
+  const e = (h.energy_code!=null) ? h.energy_code : 0;
+  let cls=(SCENE[code]||[]).slice();
+  const fired = cls.indexOf('burn')>=0;
+  if(fired && e>=3) cls.splice(cls.indexOf('burn'),1);   // element only, no flame
+  if(fired && e>=1) cls.push('elec');
+  // Only show the flame when the burner is genuinely alight. A heating mode can
+  // sit idle with a hot exchanger once the water is up to temperature.
+  const lit = isBurning();
+  const i = cls.indexOf('burn');
+  // false = definitely not alight (dim residual glow); null = no trend yet, so
+  // don't claim a flame we haven't confirmed.
+  if(i>=0 && lit!==true){ cls.splice(i,1); if(lit===false) cls.push('hot'); }
+  sc.setAttribute('class',cls.join(' '));
+  const burning = cls.indexOf('burn')>=0, elec = cls.indexOf('elec')>=0;
+  $('sv-burner').textContent =
+      burning ? (h.energy||'Burning')
+    : elec    ? (h.energy||'Element on')
+    : (fired && lit===false) ? 'Burner off · still hot'
+    : (fired && lit===null)  ? 'Checking the burner…'
+    : 'Burner off';
+  const fanOn=(SCENE[code]||[]).some(c=>c==='airon'||c==='venton');
+  $('sv-fan').textContent = fanOn ? ('Fan level '+(h.fan_level||1)) : 'Fan off';
+  if(h.air_temp_c!=null) $('sv-cabin').textContent = h.air_temp_c+'°C';
+  $('sv-cabinsub').textContent = on && h.set_air_c ? ('heating to '+h.set_air_c+'°C')
+                                                   : 'measured at the heater';
+  const wOn=(SCENE[code]||[]).indexOf('wateron')>=0;
+  $('sv-water').textContent = wOn ? (h.water_mode||'on') : 'off';
+  if(h.water_temp_c!=null) $('sv-wtemp').textContent = h.water_temp_c+'°C';
+  const tgt = WATER_TARGET[h.water_code];
+  const eta = wOn ? waterEta(h.water_temp_c, tgt) : null;
+  if(eta) $('sv-watersub').textContent = '~'+eta.min+' min to '+tgt+'°C · +'+eta.rate.toFixed(1)+'°C/min';
+  else if(wOn && tgt!=null && h.water_temp_c!=null && h.water_temp_c>=tgt)
+    $('sv-watersub').textContent = 'up to temperature';
+  else if(wOn) $('sv-watersub').textContent = 'warming up…';
+  else $('sv-watersub').textContent = 'tap water target';
+  // water level sits higher when the tank is being heated to a hotter preset
+  const lvl = wOn ? ({1:72,2:88,3:100}[h.water_code]||88) : 64;
+  $('sv-level').setAttribute('y', 178-lvl); $('sv-level').setAttribute('height', lvl);
+  const IDLE={3:'Burner idle — stored heat still going to the water and cabin',
+              4:'Burner idle — fan still moving the stored heat',
+              5:'Burner idle — stored heat still going into the water'};
+  $('scenecap').textContent =
+      (fired && lit===false && !elec) ? (IDLE[code] || 'Burner idle — heat still in the system')
+    : (fired && lit===null  && !elec) ? 'Checking whether the burner is alight…'
+    : (CAPTION[code] || (on?'Running':'Standby'));
+  document.querySelectorAll('.tile[data-act]').forEach(t=>{
+    const want={air:4,water:5,combi:3,vent:6,off:10}[t.dataset.act];
+    t.classList.toggle('sel', want===code);
+  });
+}
+
+// ---- heater status rendering --------------------------------------------
+function renderHeater(h){
+  if(h && h.water_temp_c!=null) noteWater(h.water_temp_c);
+  if(h && h.hx_temp_c!=null) noteHx(h.hx_temp_c);
+  if(h && h.run_state_code!=null){ runStateCode=h.run_state_code; runState=h.run_state; }
+  paintScene(h);
+  const model = (h && h.product>=26 && h.product<=30) ? 'Water + air combi'
+              : (h && h.product!=null) ? ('Product '+h.product) : '';
+  if(!h || !h.connected){
+    $('hstate').textContent='—'; $('hstate').style.color='var(--muted)';
+    $('hmodel').textContent='–';
+    $('hsupply').textContent='–'; $('htemp2').textContent='–';
+    $('hac').textContent='–'; $('hac').className='chip';
+    $('hfault').textContent='–'; $('hfault').className='chip';
+    $('hrun').textContent='–';
+    $('hwater2').textContent='–';
+    $('hhx').textContent='–'; $('hhx').className='chip';
+    $('s-air').textContent='–'; $('s-water').textContent='–';
+    $('s-fan').textContent='–'; $('s-energy').textContent='–';
+    $('c-air').textContent='–';
+    return;
+  }
+  $('hmodel').textContent = model;
+  const on = !!h.on;
+  $('hstate').textContent = h.mode || (on ? 'On' : 'Off');
+  $('hstate').style.color = on ? 'var(--accent)' : 'var(--muted)';
+  $('hmode').textContent = on
+    ? `Running · set ${h.set_air_c}°C · water ${h.water_mode} · fan ${h.fan_level}`
+    : 'Standby — not burning';
+  // a read can come back with the status frame but no sensor frame - keep what we had
+  if(h.supply_v!=null) $('hsupply').textContent = h.supply_v.toFixed(1)+' V supply';
+  if(h.air_temp_c!=null) $('htemp2').textContent = h.air_temp_c+' °C air';
+  if(h.water_temp_c!=null) $('hwater2').textContent = h.water_temp_c+' °C water';
+  if(h.hx_temp_c!=null){
+    const r=hxRate();
+    $('hhx').textContent = h.hx_temp_c+' °C exchanger'+(r!=null?(r>0.5?' ↑':(r<-0.5?' ↓':' →')):'');
+    $('hhx').className = 'chip' + (isBurning()===true ? ' warn' : '');
+  }
+  // The heater's own AC flag reads "present" with nothing plugged in, so it is
+  // not shown and not trusted. Mains comes from the mains charger instead,
+  // updated by tick() from /api/data.
+  if(h.error_code!==undefined){
+    $('hfault').textContent = h.fault ? ('Fault '+h.error_code) : 'No faults';
+    $('hfault').className = 'chip ' + (h.fault?'bad':'on');
+  }
+  $('hrun').textContent = h.run_hours!=null ? (h.run_hours+' h lifetime') : '–';
+
+  // while the heater is in standby these presets read back as 0 - don't show that as a setting
+  const idle = on ? null : '—';
+  $('s-air').textContent   = idle || (h.set_air_c ? (h.set_air_c+' °C') : '—');
+  $('s-water').textContent = idle || (h.water_mode && h.water_mode!=='off' ? h.water_mode : '—');
+  $('s-fan').textContent   = idle || (h.fan_level ? ('Level '+h.fan_level) : '—');
+  $('s-energy').textContent= h.energy || '–';
+  const wtgt = WATER_TARGET[h.water_code], weta = on ? waterEta(h.water_temp_c, wtgt) : null;
+  $('s-eta').textContent = weta ? ('~'+weta.min+' min')
+      : (on && wtgt!=null && h.water_temp_c>=wtgt) ? 'At temperature'
+      : (wHist.length<3 && on) ? 'Measuring…' : '—';
+  if(h.air_temp_c!=null) $('c-air').textContent = h.air_temp_c+' °C';
+  if(h.water_temp_c!=null) $('c-water').textContent = h.water_temp_c+' °C';
+
+  // adopt whatever the heater is actually running, so the controls don't lie
+  if(on){
+    if(h.set_air_c>=5 && h.set_air_c<=35) setAir=h.set_air_c;
+    if(h.fan_level>=1 && h.fan_level<=4)  setFan=h.fan_level;
+    if(h.water_code>=1 && h.water_code<=3) setWater=h.water_code;
+    // The fuel is deliberately not adopted: Auto stays Auto, and the scene
+    // above already shows what the heater is actually burning.
+    paintSettings(); paintEnergyLock();
+  }
+}
+
+// ---- background context (no Bluetooth: cached hub values only) -----------
+async function tick(){
+  try{
+    const d = await (await fetch('/api/data')).json();
+    const a = d.autoheat, r = d.renogy||{};
+    renderAutoheat(a);
+    renderTimers(d.timers, d.wake);
+    // The hub holds the last good heater reading even when a read comes back
+    // without a sensor frame.  Paint from that until our own read lands, so the
+    // page never sits on dashes while the hub knows the answer.
+    // Paint a remembered reading too, so the page opens populated instead of
+    // sitting on dashes while a Bluetooth read runs. It is labelled below so a
+    // remembered figure is never mistaken for a live one.
+    if(!lastRead && d.heater && (d.heater.connected || d.heater.remembered)){
+      renderHeater(d.heater);
+      if(d.heater.remembered && !lastRead){
+        $('hmode').textContent = 'Last known settings — press Read to check the heater';
+        $('scenecap').textContent = 'Last known settings, not a live reading';
+      }
+    }
+    // the DC-DC poll pauses while the hub is on the heater's Bluetooth, so a
+    // missing probe reading is usually a gap, not a failed sensor
+    const probe = (a && a.temp_c!=null) ? a.temp_c : (r.batt_temp_c!=null ? r.batt_temp_c : null);
+    if(probe!=null){
+      lastProbe = probe;
+      $('c-probe').textContent = probe+' °C';
+      $('probest').className='ok';
+      $('probetext').textContent='Temperature probe '+probe+' °C';
+    } else if(lastProbe==null){
+      $('probest').className=''; $('probetext').textContent='Temperature probe offline';
+    }
+    $('c-soc').textContent = d.soc!=null ? (d.soc+' % · '+(d.voltage!=null?d.voltage.toFixed(2)+' V':'–')) : '–';
+    if(d.mains_live!==undefined){
+      const was = haveAC;
+      haveAC = !!d.mains_live;
+      $('hac').textContent = haveAC ? 'Mains hook-up: yes' : 'Mains hook-up: no';
+      $('hac').className = 'chip' + (haveAC ? ' on' : '');
+      if(was!==haveAC) paintEnergyLock();
+    }
+    if(lastRead){
+      const secs = Math.round((Date.now()-lastRead)/1000);
+      $('age').textContent = secs<15 ? 'Read just now'
+        : secs<90 ? ('Read '+secs+' s ago')
+        : ('Read '+Math.round(secs/60)+' min ago');
+    }
+  }catch(e){ /* hub unreachable; the heater card keeps its last values */ }
+}
+
+// ---- frost protection ----------------------------------------------------
+function renderAutoheat(a){
+  if(!a) return;
+  const st=$('ah-state');
+  if(a.armed){
+    st.textContent = a.active ? ('Heating · ' + a.run_min + ' min') : 'Armed';
+    st.style.color = a.active ? 'var(--accent)' : 'var(--brand)';
+  } else { st.textContent='Disarmed'; st.style.color='var(--muted)'; }
+  $('ah-sub').textContent = (a.temp_c!=null)
+    ? ('Probe ' + a.temp_c + ' °C · heats below ' + a.on_below + ' °C, stops above ' + a.off_above + ' °C')
+    : 'Waiting for the DC-DC temperature probe…';
+  $('ah-last').textContent = a.last ? ('Last: ' + a.last) : '';
+  if(document.activeElement && document.activeElement.tagName==='INPUT') return;  // don't fight typing
+  $('ah-on').value=a.on_below; $('ah-off').value=a.off_above; $('ah-target').value=a.target_c;
+  $('ah-soc').value=a.min_soc; $('ah-max').value=a.max_run_min;
+}
+async function ahPost(extra){
+  const body=Object.assign({on_below:+$('ah-on').value, off_above:+$('ah-off').value,
+    target_c:+$('ah-target').value, min_soc:+$('ah-soc').value, max_run_min:+$('ah-max').value}, extra||{});
+  try{
+    const res=await (await fetch('/api/autoheat',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+    if(res.autoheat) renderAutoheat(res.autoheat);
+  }catch(e){ $('ah-last').textContent='Could not reach the hub: '+e.message; }
+}
+$('ah-arm').addEventListener('click',()=>{
+  if(confirm('Arm frost protection? The heater will start automatically when the probe drops to '
+    +$('ah-on').value+' °C, and stop above '+$('ah-off').value+' °C.')) ahPost({armed:true});
+});
+$('ah-disarm').addEventListener('click',()=>ahPost({armed:false}));
+$('ah-save').addEventListener('click',()=>ahPost({}));
+
+// ---- heater timers -------------------------------------------------------
+const TM_NAME={warm:'Morning warm-up', water:'Morning hot water'};
+let tmShown=false, tmEdited=false;
+function renderTimers(list, wake){
+  if(!Array.isArray(list)) return;
+  const w = wake && wake.at
+    ? ('The alarm clock also warms the van: heater on at ' + wake.at + (wake.last ? ' · ' + wake.last : '')
+       + '. Set it with the alarm clock: in the app, tap the clock on Home.')
+    : 'The alarm clock can warm the van before it rings: in the app, tap the clock on Home.';
+  $('tm-wake').textContent = w;
+  if(tmEdited && tmShown){                // don't overwrite changes being made
+    list.forEach(t=>{ const e=$('tm-st-'+t.id); if(e) e.textContent=tmState(t); });
+    return;
+  }
+  $('tm-list').innerHTML = list.map(t=>
+    '<div class="ctl" style="margin-top:12px;align-items:center">'
+    + '<b style="min-width:150px;font-size:14px">'+(TM_NAME[t.id]||t.id)+'</b>'
+    + '<button class="btn '+(t.on?'on':'')+'" data-tm-on="'+t.id+'">'+(t.on?'On':'Off')+'</button>'
+    + '<label>at <input type="time" id="tm-at-'+t.id+'" value="'+t.at+'" style="width:104px"></label>'
+    + (t.action==='water'
+        ? '<label>water <select id="tm-w-'+t.id+'" style="background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px">'
+          + [1,2,3].map(v=>'<option value="'+v+'"'+(t.water==v?' selected':'')+'>'+WATER[v]+'</option>').join('')
+          + '</select></label>'
+        : '<label>heat to <input type="number" min="5" max="35" id="tm-t-'+t.id+'" value="'+t.temp+'"> &deg;C</label>')
+    + '<label>for <input type="number" min="15" max="240" step="5" id="tm-r-'+t.id+'" value="'+t.run_min+'"> min</label>'
+    + '<span class="sub" style="margin:0" id="tm-st-'+t.id+'">'+tmState(t)+'</span>'
+    + '</div>').join('');
+  tmShown=true;
+  document.querySelectorAll('[data-tm-on]').forEach(b=>b.onclick=()=>{
+    const on=!b.classList.contains('on');
+    b.classList.toggle('on',on); b.textContent=on?'On':'Off'; tmEdited=true;
+  });
+  $('tm-list').querySelectorAll('input,select').forEach(e=>e.oninput=()=>{tmEdited=true;});
+}
+function tmState(t){
+  return t.running ? 'Running now' : (t.last || '');
+}
+$('tm-save').addEventListener('click', async ()=>{
+  const timers=[...document.querySelectorAll('[data-tm-on]')].map(b=>{
+    const id=b.dataset.tmOn, t={id, on:b.classList.contains('on'), at:$('tm-at-'+id).value,
+      run_min:+$('tm-r-'+id).value};
+    if($('tm-t-'+id)) t.temp=+$('tm-t-'+id).value;
+    if($('tm-w-'+id)) t.water=+$('tm-w-'+id).value;
+    return t;
+  });
+  $('tm-note').textContent='Saving…';
+  try{
+    const r=await (await fetch('/api/timers',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({timers})})).json();
+    if(r.ok){ tmEdited=false; renderTimers(r.timers); $('tm-note').textContent='Saved.'; }
+    else $('tm-note').textContent='Not saved: '+(r.error||'the hub refused');
+  }catch(e){ $('tm-note').textContent='Could not reach the hub.'; }
+});
+
+// ---- heater command / read-back -----------------------------------------
+async function heaterCmd(act, silent, bg){
+  if(act!=='read' && !silent){
+    let msg;
+    if(act==='off') msg='Turn the heater OFF?';
+    else if(act==='vent') msg=`Start ventilation at fan level ${setFan}?`;
+    else if(act==='water') msg=`Start water heating (${WATER[setWater]})?`;
+    else if(act==='air') msg=`Start air heating at ${setAir}°C?`;
+    else msg=`Start water + air (water ${WATER[setWater]}, air ${setAir}°C)?`;
+    if(act!=='off' && act!=='vent') msg += `
+
+Energy source: ${setEnergy==='auto' ? 'Auto — ' + (haveAC===true ? 'electric (hook-up live)' : 'diesel (no hook-up)') : ENERGY[setEnergy]}`;
+    if(!confirm(msg)) return;
+  }
+  if(inFlight) return;                 // never talk over an in-flight command
+  inFlight=true;
+  // bg marks the page's own timed refresh: the hub then gives up quickly
+  // rather than retrying on a bad link and starving the battery/DC-DC polling.
+  const body={action:act, temp:setAir, water:setWater, level:setFan, energy:setEnergy};
+  if(bg) body.bg=1;
+  const btns=[...document.querySelectorAll('.tile[data-act], .btn[data-act]')];
+  btns.forEach(b=>b.disabled=true);
+  const r=$('hresult'); r.className='';
+  if(act==='read'){ setLink('busy','Connecting to the heater…'); $('scenecap').textContent='Reading the heater over Bluetooth…'; }
+  else { setLink('busy','Sending to the heater…'); r.textContent=`${LABEL[act]} — sending & reading back…`;
+         $('scenecap').textContent=`${LABEL[act]} — sending to the heater…`; }
+  try{
+    const ctl=new AbortController(); const tmr=setTimeout(()=>ctl.abort(),90000); // hub may retry for ~60 s
+    const resp=await fetch('/api/heater/cmd',{method:'POST',signal:ctl.signal,
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    clearTimeout(tmr);
+    const res=await resp.json();
+    if(res.ok){
+      lastRead=Date.now();
+      const s=res.status||{}, se=res.sensors||{};
+      renderHeater(Object.assign({connected:true, product:res.product, firmware:res.firmware}, s, se));
+      const t=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      setLink('ok','Heater read '+t);
+      $('s-read').textContent='Read at '+t;
+      if(act!=='read'){
+        const v = s.mode ? (s.on ? ('ON · '+s.mode) : 'off') : 'sent (no status)';
+        r.className='ok';
+        r.textContent=`${LABEL[act]} ✓ confirmed — heater now ${v}` + (res.energy_auto ? ` · ${res.energy_auto}` : '');
+      } else { r.textContent='Status refreshed'; }
+    } else {
+      if(res.no_ac){ haveAC=false; paintEnergyLock(); }
+      renderHeater({connected:false});
+      setLink('warn','Heater not reachable');
+      $('scenecap').textContent = res.error || 'Could not read the heater';
+      r.className='bad'; r.textContent=`${LABEL[act]} failed: ${res.error}`;
+    }
+  }catch(e){
+    setLink('warn','Heater not reachable');
+    $('scenecap').textContent='Could not reach the hub';
+    r.className='bad'; r.textContent=`${LABEL[act]} failed: ${e.message}`;
+  }
+  inFlight=false;
+  btns.forEach(b=>b.disabled=false);
+  paintEnergyLock();                   // keep the electric lock honest after a read
+}
+document.querySelectorAll('.tile[data-act], .btn[data-act]')
+  .forEach(b=>b.addEventListener('click',()=>heaterCmd(b.dataset.act)));
+
+// Opening the page connects to the heater and refreshes its status, and it then
+// re-reads every 60 s for as long as the page is actually on screen. Hidden tabs
+// are skipped, so a forgotten tab never sits on the heater's Bluetooth.
+const REFRESH_MS = 60000;
+tick(); setInterval(tick,5000);
+heaterCmd('read', true);
+setInterval(()=>{
+  if(document.hidden || inFlight) return;
+  if(Date.now()-lastRead < REFRESH_MS-5000) return;   // a command just read it
+  heaterCmd('read', true, true);
+}, 15000);
+// Coming back to the tab after a while shouldn't wait for the next tick.
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && !inFlight && Date.now()-lastRead > REFRESH_MS) heaterCmd('read', true, true);
+});
+
+
+
+
+
+
+</script>
+</body>
+</html>

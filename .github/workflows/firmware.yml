@@ -1,0 +1,50 @@
+# Builds MicroPython for the hub's board, the Waveshare RP2350-Relay-6CH-W:
+# the release named below, unchanged, plus our board definition from
+# firmware/boards/. The .uf2 comes out as the run's artifact; flash it by
+# dragging it onto the board's RP2350 drive (hold BOOT while plugging in).
+name: Hub firmware
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware.yml"
+
+env:
+  MICROPYTHON_VERSION: v1.29.0      # keep in step with mpy-cross (tools/build_mpy.py)
+  BOARD: WAVESHARE_RP2350_RELAY_6CH_W
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+
+      - name: MicroPython source
+        run: |
+          git clone --depth 1 --branch "$MICROPYTHON_VERSION" https://github.com/micropython/micropython.git mp
+          cp -r "firmware/boards/$BOARD" mp/ports/rp2/boards/
+          make -C mp/mpy-cross -j"$(nproc)"
+          make -C mp/ports/rp2 BOARD="$BOARD" submodules
+
+      - name: Build
+        run: make -C mp/ports/rp2 BOARD="$BOARD" -j"$(nproc)"
+
+      - name: Collect
+        run: |
+          mkdir out
+          cp "mp/ports/rp2/build-$BOARD/firmware.uf2" "out/${BOARD}-${MICROPYTHON_VERSION}.uf2"
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-firmware-${{ env.MICROPYTHON_VERSION }}
+          path: out/*.uf2
+          retention-days: 90
