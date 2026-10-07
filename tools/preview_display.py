@@ -174,6 +174,7 @@ SAMPLE = {
     "renogy": {"connected": True, "solar_w": 212, "solar_v": 19.4, "alt_w": 0,
                "alt_v": 12.6, "charge_w": 190, "charge_a": 14.2, "state": "MPPT"},
     "victron": {"connected": False},
+    "starter": {"state": "rest", "v": 12.6, "soc": 76},
     "derived": {"load_a": 7.8, "load_w": 104},
     "heater": {"connected": False, "remembered": True, "at": 1790330000, "on": True,
                "mode": "Air", "mode_code": 4, "set_air_c": 20, "air_temp_c": 17, "water_temp_c": 44,

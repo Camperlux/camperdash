@@ -853,6 +853,49 @@ def _engine_note(engine):
             _disp_save()
 
 
+# ---- the starter battery's charge, from its voltage at rest -------------------
+# A 12 V sealed (AGM) lead-acid battery - what a stop-start Crafter has - read
+# against its resting voltage, from Nature's Generator's chart (sealed column):
+# https://naturesgenerator.com/blogs/news/lead-acid-battery-voltage-chart
+# Only a battery at rest tells its charge: the alternator holds it near 14 V,
+# the DC-DC's trickle from the hook-up near 13.2 V, and after a drive its
+# surface charge reads high for a while. So: 13.0 V or more, or the engine on,
+# is "charging" with no figure; within STARTER_SETTLE_MIN of the engine
+# stopping (or of the hub starting) the figure is marked as settling.
+STARTER_CHART = ((11.63, 0), (11.70, 10), (11.81, 20), (11.96, 30), (12.11, 40), (12.23, 50),
+                 (12.41, 60), (12.51, 70), (12.65, 80), (12.78, 90), (12.89, 100))
+STARTER_CHARGING_V = 13.0
+STARTER_SETTLE_MIN = 30
+
+
+def starter_soc(v):
+    """Percent from a resting voltage, straight lines between the chart's steps."""
+    if v is None:
+        return None
+    lo, hi = STARTER_CHART[0], STARTER_CHART[-1]
+    if v <= lo[0]:
+        return 0
+    if v >= hi[0]:
+        return 100
+    for (v0, p0), (v1, p1) in zip(STARTER_CHART, STARTER_CHART[1:]):
+        if v <= v1:
+            return round(p0 + (p1 - p0) * (v - v0) / (v1 - v0))
+    return 100
+
+
+def _starter_status(r):
+    """{"state": "offline" | "charging" | "settling" | "rest", "v", "soc"} -
+    the voltage is the DC-DC's input side, which is the starter battery."""
+    v = r.get("alt_v") if r.get("connected") else None
+    if v is None:
+        return {"state": "offline", "v": None, "soc": None}
+    if _engine_now or v >= STARTER_CHARGING_V:
+        return {"state": "charging", "v": round(v, 2), "soc": None}
+    rested = (_engine_off_at is not None and ticks_diff(ticks_ms(), _engine_off_at)
+              >= STARTER_SETTLE_MIN * 60000)
+    return {"state": "rest" if rested else "settling", "v": round(v, 2), "soc": starter_soc(v)}
+
+
 # ---- guard -----------------------------------------------------------------
 # Armed when the van is left. After a minute to get out and lock up, it takes
 # the van's tilt (and position, if the GPS has a fix) as normal; the van being
@@ -1368,6 +1411,7 @@ def api_data():
     b["wake"] = _wake_status()
     b["guard"] = _guard_status()
     b["engine"] = _engine_now
+    b["starter"] = _starter_status(b["renogy"])
     b["van"] = _van_size()
     return b
 

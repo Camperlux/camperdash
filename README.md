@@ -29,6 +29,7 @@ On the van's network, open **http://camperlux.local**, or the hub's address. Mor
 
 - **Battery:** Fogstar/JBD BMS state of charge, voltages, current, cells, temperatures and faults, with a live power-flow diagram (solar, alternator, mains, loads), and storage mode for lay-up.
 - **Chargers:** Renogy DC-DC (BT-2) for alternator and solar; Victron Blue Smart IP22 for mains.
+- **Starter battery:** its voltage, and its charge worked out from the voltage once the battery has rested (a sealed lead-acid chart).
 - **Heater:** JP/SolGP CR12 diesel combi.
   - Air, water, air + water, and fan only.
   - Fan speed, a target temperature dial, timers, frost protection, and "auto" fuel (electric on hook-up).

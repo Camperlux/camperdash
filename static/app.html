@@ -777,6 +777,28 @@ function buildFlow(){
   $("flow").innerHTML = s;
 }
 function flowSpeed(w){ return 52 / Math.max(0.35, Math.min(2.4, 160 / Math.max(w, 6))); }
+// The starter battery's charge, as display/ui.py starter_sub words it: from
+// the hub's reading of the resting voltage (main.py _starter_status). Where a
+// report has no reading of its own, worked out here from the same chart.
+const STARTER_CHART = [[11.63, 0], [11.70, 10], [11.81, 20], [11.96, 30], [12.11, 40], [12.23, 50],
+                       [12.41, 60], [12.51, 70], [12.65, 80], [12.78, 90], [12.89, 100]];
+function starterSoc(v){
+  if(v == null) return null;
+  if(v <= STARTER_CHART[0][0]) return 0;
+  for(let i = 1; i < STARTER_CHART.length; i++){
+    const [v0, p0] = STARTER_CHART[i - 1], [v1, p1] = STARTER_CHART[i];
+    if(v <= v1) return Math.round(p0 + (p1 - p0) * (v - v0) / (v1 - v0));
+  }
+  return 100;
+}
+function starterSub(st, rok, engine, v){
+  if(!rok) return "Offline";
+  if(engine) return "Engine running";
+  st = st || (v == null ? {} : v >= 13.0 ? {state: "charging"} : {state: "settling", soc: starterSoc(v)});
+  if(st.state === "charging") return "Charging";
+  if(st.soc == null) return "Resting";
+  return st.state === "settling" ? "About " + st.soc + "%" : st.soc + "% charge";
+}
 function setNode(id, on, col, v, sub){
   const g = $("n-" + id); g.querySelector(".nic").style.stroke = on ? col : "#9a8f9e";
   g.querySelector(".nt").style.fill = on ? "#efe9e0" : "#9a8f9e";
@@ -799,7 +821,7 @@ function renderFlow(){
   setNode("alt", alt > 0.5 || engine, "#39d3c3", rok ? W(alt) : "–", !rok ? "Offline" : alt > 0.5 ? (r.alt_a || 0).toFixed(1) + " A" : engine ? "Engine on" : "Engine off");
   setNode("mains", mains > 0.5, "#58a6ff", vok ? W(mains) : "–", vok ? (v.current || 0).toFixed(1) + " A" : (v.stale ? "Unplugged" : "Offline"));
   setNode("load", (load || 0) > 0.5, "#d29922", load != null ? W(load) : "–", load != null ? (der.load_a || 0).toFixed(1) + " A" : "");
-  setNode("starter", engine, "#58a6ff", rok ? (r.alt_v || 0).toFixed(1) + " V" : "–", !rok ? "Offline" : engine ? "Engine running" : "Resting");
+  setNode("starter", engine, "#58a6ff", rok ? (r.alt_v || 0).toFixed(1) + " V" : "–", starterSub(d.starter, rok, engine, r.alt_v));
   setEdge("solar", solar, "#3fb950", "#2b6e36"); setEdge("alt", alt, "#3fb950", "#2b6e36"); setEdge("mains", mains, "#3fb950", "#2b6e36");
   setEdge("load", load || 0, "#d29922", "#7a5a17"); setEdge("starter", engine ? 1 : 0, "#58a6ff", "#355f8f");
   const soc = bok ? d.soc : null, pct = Math.max(0, Math.min(100, soc || 0)), col = pct > 50 ? "#3fb950" : pct > 20 ? "#d29922" : "#f85149";

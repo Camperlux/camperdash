@@ -192,4 +192,14 @@ assert not [f for f in _wipe if f.startswith("ota") or f == "touch_cal.json" or 
 assert _consts["RESET_HOLD_S"] == 10
 ok("display factory reset: pairing, learned networks and preferences cleared; updates and touch kept")
 
+# the starter card's second line
+sub = type(u).starter_sub
+assert sub(None, False, False) == "Offline"
+assert sub({"state": "rest", "soc": 76}, True, True) == "Engine running"
+assert sub({"state": "charging", "soc": None}, True, False) == "Charging"
+assert sub({"state": "rest", "soc": 76}, True, False) == "76% charge"
+assert sub({"state": "settling", "soc": 88}, True, False) == "About 88%"
+assert sub(None, True, False) == "Resting"                 # a hub from before: no reading
+ok("starter card: the charge at rest, 'About' while settling, 'Charging' when charged")
+
 print("\nALL OK - %d checks" % len(passed))

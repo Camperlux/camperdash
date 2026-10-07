@@ -1198,6 +1198,24 @@ class UI:
             sub = sub[:-2] + "\u2026"
         f.sm.text(fb, sub, x + 10, y + h - 19, MUTED, PANEL)
 
+    @staticmethod
+    def starter_sub(st, rok, engine):
+        """The starter card's second line: its charge, from the hub's reading
+        of the resting voltage (main.py, _starter_status). Only at rest does
+        the voltage tell the charge; charging or just after, it says so."""
+        if not rok:
+            return "Offline"
+        if engine:
+            return "Engine running"
+        st = st or {}
+        if st.get("state") == "charging":
+            return "Charging"
+        if st.get("soc") is None:
+            return "Resting"
+        if st.get("state") == "settling":
+            return "About %d%%" % st["soc"]
+        return "%d%% charge" % st["soc"]
+
     def _page_power_flow(self):
         fb, f, a = self.fb, self.f, self.aa
         d = self.data or {}
@@ -1236,7 +1254,7 @@ class UI:
              (load or 0) > 0.5, AMBER),
             (self.RX, BODY_Y + 147, "battery", "Starter",
              ("%.1f V" % (r.get("alt_v") or 0)) if rok else DASH,
-             "Offline" if not rok else "Engine running" if engine else "Resting",
+             self.starter_sub(d.get("starter"), rok, engine),
              engine, BLUE),
         )
         edges = (("solar", solar, GREEN), ("alt", alt, GREEN), ("mains", mains, GREEN),

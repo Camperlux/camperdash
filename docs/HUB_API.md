@@ -131,6 +131,7 @@ Top-level fields, grouped:
 | Field | Source | Notable keys |
 |---|---|---|
 | `renogy` | Renogy DC-DC/MPPT | `solar_v/a/w`, `alt_v/a/w` (alt_v = starter battery voltage), `charge_a`, `charge_w`, `charge_out_w` (total output), `battery_v`, `batt_temp_c` (external probe), `ctrl_temp_c`, `state`, `source`, `today_*`, `faults` |
+| `starter` | The starter battery, from the DC-DC's input side | `state` (`offline`, `charging` - engine on or 13.0 V and over, `settling` - within 30 min of the engine stopping, `rest`), `v`, `soc` (%, from a sealed lead-acid resting-voltage chart; `null` while charging) |
 | `victron` | Victron IP22 mains charger | `connected` (= mains hook-up live), `current`, … |
 | `heater` | Diesel/electric heater | `on`, `mode`, `mode_code`, `set_air_c`, `water_mode`, `energy`, `supply_v`, `air_temp_c`, `water_temp_c`, `run_state_code`, `error_code`, `fault`, `remembered` (last reading, not live), `at` |
 | `derived` | Computed | `load_a`, `load_w` — the true load: charge in − battery net |

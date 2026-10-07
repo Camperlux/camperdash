@@ -330,4 +330,22 @@ assert 900 < hub._dist_m(("54.3040", "-2.1980"), ("54.3130", "-2.1980")) < 1100
 ok("the forecast's moved-check takes the Settings location, stored as text")
 
 
+
+# ---- the starter battery's charge from its resting voltage ----------------------------------
+assert hub.starter_soc(12.89) == 100 and hub.starter_soc(13.4) == 100
+assert hub.starter_soc(11.63) == 0 and hub.starter_soc(10.9) == 0
+assert hub.starter_soc(12.23) == 50 and hub.starter_soc(12.65) == 80
+assert hub.starter_soc(12.58) == 75                     # between the chart's 70% and 80% steps
+assert all(hub.starter_soc(a[0]) <= hub.starter_soc(b[0]) for a, b in zip(hub.STARTER_CHART, hub.STARTER_CHART[1:]))
+hub._engine_now, hub._engine_off_at = False, hub.ticks_ms() - 31 * 60000
+assert hub._starter_status({"connected": True, "alt_v": 12.58}) == {"state": "rest", "v": 12.58, "soc": 75}
+hub._engine_off_at = hub.ticks_ms() - 5 * 60000          # stopped five minutes ago
+assert hub._starter_status({"connected": True, "alt_v": 12.7})["state"] == "settling"
+assert hub._starter_status({"connected": True, "alt_v": 13.2}) == {"state": "charging", "v": 13.2, "soc": None}
+hub._engine_now = True
+assert hub._starter_status({"connected": True, "alt_v": 12.4})["state"] == "charging"
+hub._engine_now = False
+assert hub._starter_status({"connected": False, "alt_v": 12.6})["state"] == "offline"
+ok("starter battery: charge from the resting voltage (sealed lead-acid chart); none while charging; settling after a drive")
+
 print("\nALL OK - %d checks" % len(passed))
