@@ -123,7 +123,9 @@ async def main():
     s += [(200, [(150, 200)]), (260, [])]          # choose "2 players"? no: 1 player is at (145,185)
     s = [(0, []), (150, [(330, 180)]), (250, [])] + [(400 + k * 60, [(40, 80 + (k * 13) % 200), (440, 250 - (k * 17) % 200)]) for k in range(80)]
     g = await play("g_pong", s, 5, ((0.2, "pong_choose"), (3, "pong_play")))
-    print("   pong score", g.score, "two players:", not g.solo)
+    # the score is set up only once players are chosen; on a busy PC the
+    # scripted tap can come before the choice is on screen (seen: an odd run)
+    print("   pong score", getattr(g, "score", "no game started"), "two players:", not getattr(g, "solo", True))
     # Breakout: slide, tap to launch, keep sliding under the ball
     s = [(0, []), (300, [(240, 290)]), (400, [])] + [(600 + k * 40, [(40 + (k * 23) % 400, 290)]) for k in range(120)]
     g = await play("g_breakout", s, 5, ((0.3, "breakout_start"), (4, "breakout_play")))

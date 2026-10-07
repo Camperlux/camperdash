@@ -188,12 +188,16 @@ def save_prefs():
             json.dump({"brightness": view.brightness, "sound": view.sound_on,
                        "night": view.night_mode, "ambient": view.ambient,
                        "alarm_clock": view.alarm_clock, "dim": view.dim_on,
-                       "offmode": view.offmode}, f)
+                       "offmode": view.offmode, "unsent": sorted(_unsent)}, f)
     except OSError as e:
         print("could not save preferences:", e)
 
 
 _prefs = load_prefs()
+# Shared settings changed here that the hub has not yet taken (share_task).
+# Until it has, its older copy must not overwrite them here, and they are sent
+# again whenever it can be reached - see share() for why.
+_unsent = set(p for p in (_prefs.get("unsent") or []) if isinstance(p, str))
 _bright = _prefs.get("brightness", c("BRIGHTNESS", 1.0))
 _bright = 0.1 if _bright < 0.1 else 1.0 if _bright > 1.0 else _bright
 disp.backlight(_bright)
@@ -663,25 +667,46 @@ _fetching = False
 
 
 def share(*parts):
-    """A setting the hub keeps for every screen changed here: send it."""
+    """A setting the hub keeps for every screen changed here: send it.
+
+    It stays on the waiting list (_unsent) until the hub has taken it. A send
+    used to be tried three times in two seconds and then dropped without a
+    word: the hub, unreachable for a moment (restarting, changing network),
+    kept its old copy, and the next change to any shared setting - a switch
+    from a phone, the Drive list clearing itself after a stop - brought that
+    old copy back here. "Dim off" turned itself back on that way."""
     global _share_at
     _share_at = time.ticks_ms()
-    asyncio.create_task(share_task({p: view.share(p) for p in parts}))
+    if not set(parts) <= _unsent:
+        _unsent.update(parts)
+        save_prefs()
+    asyncio.create_task(share_task(parts))
 
 
-async def share_task(body):
+async def share_task(parts):
     global _drev
     for _ in range(3):
         try:
+            # the values as they are now: a later change may have moved them
+            body = {p: view.share(p) for p in parts}
             r = await hub.post("/api/display", body)
             if r.get("ok"):
                 _drev = r["display"]["rev"]
                 if view.data is not None:
                     view.data["wake"] = r.get("wake")
                 view.dirty = True
+            else:
+                print("share: the hub refused", parts, r.get("error"))
+            # taken (or refused - sending it again would not help): off the
+            # list, unless it changed again here while this was on its way
+            done = [p for p in parts if p in _unsent and view.share(p) == body[p]]
+            if done:
+                _unsent.difference_update(done)
+                save_prefs()
             return
         except HubError:
             await asyncio.sleep_ms(700)
+    print("share: the hub did not take", parts, "- sent again when it answers")
 
 
 def _sharing():
@@ -704,8 +729,11 @@ async def fetch_shared():
 
 
 def adopt_shared(d):
-    """The hub's copy, changed on a phone perhaps: show it here."""
+    """The hub's copy, changed on a phone perhaps: show it here - all but the
+    settings changed here that the hub has not taken yet (_unsent)."""
     global _drev, _ota_req
+    if _unsent:
+        d = {k: v for k, v in d.items() if k not in _unsent}
     if isinstance(d.get("ambient"), dict):
         view.ambient.update(d["ambient"])
     if isinstance(d.get("alarm_clock"), dict):
@@ -833,6 +861,9 @@ async def alert_task():
                         a["acked"] = True
                 view.alerts = alerts
                 view.alert_sound = bool(r.get("sound", True))
+                # changes the hub has not taken yet: it answers now, so send them
+                if _unsent and not _sharing():
+                    share(*sorted(_unsent))
                 # the shared settings moved: fetch them, unless the move is ours
                 dr = r.get("drev")
                 if dr is not None and dr != _drev and not _sharing() and not _fetching:
