@@ -238,7 +238,7 @@ async function tick(){
   try{ d = await (await fetch('/api/data',{cache:'no-store'})).json(); }
   catch(e){ setStatus(false,'Server unreachable'); return; }
 
-  renderRenogy(d.renogy||{}, d.derived||{});
+  renderRenogy(d.renogy||{}, d.derived||{}, d);
   renderVictron(d.victron||{}, d.renogy||{});
   if(!d.connected){
     setStatus(false, d.error ? 'Battery: '+d.error.slice(0,30) : 'Battery…');
@@ -407,7 +407,7 @@ function renderVictron(v, r){
   } else { $('totchg').textContent='–'; $('totbreak').textContent='No charger connected'; }
 }
 
-function renderRenogy(r, dv){
+function renderRenogy(r, dv, d){
   // true load (needs both devices fresh)
   if(dv.load_a!=null){ $('load').textContent=dv.load_a.toFixed(2); $('loadw').textContent=dv.load_w.toFixed(0);
     $('loadnote').textContent='Charger in − battery net'; }
@@ -423,7 +423,10 @@ function renderRenogy(r, dv){
   $('altv').textContent=r.alt_v.toFixed(1); $('alta').textContent=r.alt_a.toFixed(2);
   // 13.6, not 13.2: the DC-DC holds this line at 13.2 V trickle-charging the
   // starter from the hook-up with the engine off.
-  $('altnote').textContent= r.alt_a>0.05 ? 'Engine running' : (r.alt_v>13.6?'Engine on, not charging':'Engine off');
+  // The hub's own judgement first: it knows when a charger is on the starter.
+  $('altnote').textContent= ('engine' in d) ? (d.engine ? 'Engine running'
+      : (d.starter && d.starter.state==='charging' ? 'Engine off, starter on charge' : 'Engine off'))
+    : r.alt_a>0.05 ? 'Engine running' : (r.alt_v>13.6?'Engine on, not charging':'Engine off');
   $('solw').innerHTML= r.solar_a>0.05? r.solar_w : '<span class="off">0</span>';
   $('solv').textContent=r.solar_v.toFixed(1); $('sola').textContent=r.solar_a.toFixed(2);
   $('rwh').textContent=r.today_chg_wh; $('rah').textContent=r.today_chg_ah;

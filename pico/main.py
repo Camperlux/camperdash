@@ -827,6 +827,38 @@ def _wake_status():
 
 
 # ---- the engine, as the alerts judge it ------------------------------------
+# A mains charger on the starter battery (Settings, Alerts: "Starter battery on
+# charge") lifts the alternator line to 13.2 V and more - enough for the DC-DC
+# to start drawing from it with the ignition off, measured with a CTEK - so
+# while it is set the alternator readings say nothing of the engine. Moving
+# clears it: a switch left on must not hide driving off still plugged in.
+_CHARGER_MOVING_KN = 3.0    # GPS speed taken as driving (about 5.5 km/h)
+
+
+def _engine_reading(r):
+    """The engine from the DC-DC's alternator side: any current drawn from it,
+    or its line at _ALERT_ENGINE_V or more - unless a charger is on the starter."""
+    if getattr(cfg, "STARTER_CHARGER", False):
+        g = gps_status()
+        if g.get("fix") and (g.get("speed_kn") or 0) >= _CHARGER_MOVING_KN:
+            _starter_charger_off()
+        else:
+            return False
+    return bool(r.get("connected")) and ((r.get("alt_a") or 0) > 0.05
+                                         or (r.get("alt_v") or 0) >= _ALERT_ENGINE_V)
+
+
+def _starter_charger_off():
+    s = settings.load()
+    s["alerts"]["starter_charger"] = False
+    try:
+        settings.save(s)
+    except OSError as e:
+        print("starter charger: could not save:", e)
+    settings.apply()
+    print("starter charger: switched off - the van is moving")
+
+
 _engine_now = False
 _engine_off_at = None       # ticks_ms the engine stopped (or the hub started)
 _ticks_reset = False        # the Drive list has been cleared for this stop
@@ -854,30 +886,38 @@ def _engine_note(engine):
 
 
 # ---- the starter battery's charge, from its voltage at rest -------------------
-# A 12 V sealed (AGM) lead-acid battery - what a stop-start Crafter has - read
-# against its resting voltage, from Nature's Generator's chart (sealed column):
+# A 12 V lead-acid battery read against its resting voltage, from Nature's
+# Generator's charts: sealed (AGM, what a stop-start Crafter has) and flooded,
+# which reads about 0.25 V lower for the same charge. Settings, Alerts picks.
 # https://naturesgenerator.com/blogs/news/lead-acid-battery-voltage-chart
 # Only a battery at rest tells its charge: the alternator holds it near 14 V,
 # the DC-DC's trickle from the hook-up near 13.2 V, and after a drive its
 # surface charge reads high for a while. So: 13.0 V or more, or the engine on,
 # is "charging" with no figure; within STARTER_SETTLE_MIN of the engine
 # stopping (or of the hub starting) the figure is marked as settling.
-STARTER_CHART = ((11.63, 0), (11.70, 10), (11.81, 20), (11.96, 30), (12.11, 40), (12.23, 50),
-                 (12.41, 60), (12.51, 70), (12.65, 80), (12.78, 90), (12.89, 100))
+STARTER_CHARTS = {
+    "agm": ((11.63, 0), (11.70, 10), (11.81, 20), (11.96, 30), (12.11, 40), (12.23, 50),
+            (12.41, 60), (12.51, 70), (12.65, 80), (12.78, 90), (12.89, 100)),
+    "flooded": ((11.59, 0), (11.63, 10), (11.76, 20), (11.87, 30), (11.97, 40), (12.07, 50),
+                (12.18, 60), (12.29, 70), (12.41, 80), (12.53, 90), (12.64, 100)),
+}
+STARTER_CHART = STARTER_CHARTS["agm"]
 STARTER_CHARGING_V = 13.0
 STARTER_SETTLE_MIN = 30
 
 
-def starter_soc(v):
-    """Percent from a resting voltage, straight lines between the chart's steps."""
+def starter_soc(v, kind=None):
+    """Percent from a resting voltage, straight lines between the chart's steps,
+    on the chart for this kind of battery (Settings; AGM unless told)."""
     if v is None:
         return None
-    lo, hi = STARTER_CHART[0], STARTER_CHART[-1]
+    chart = STARTER_CHARTS.get(kind or getattr(cfg, "STARTER_TYPE", "agm"), STARTER_CHART)
+    lo, hi = chart[0], chart[-1]
     if v <= lo[0]:
         return 0
     if v >= hi[0]:
         return 100
-    for (v0, p0), (v1, p1) in zip(STARTER_CHART, STARTER_CHART[1:]):
+    for (v0, p0), (v1, p1) in zip(chart, chart[1:]):
         if v <= v1:
             return round(p0 + (p1 - p0) * (v - v0) / (v1 - v0))
     return 100
@@ -1031,6 +1071,30 @@ async def _guard_check(lv=None):
 
 # ---- battery alerts ----------------------------------------------------------
 _low_on = False          # low-battery latch, so it does not flicker at the limit
+_starter_low_on = False  # the starter battery's, the same way
+
+
+def _starter_alert(r):
+    """{"starter_low": detail} while the starter battery, at rest, is below the
+    limit in Settings. Judged only at rest - charging or just after a drive
+    its voltage reads high - and kept as it was until the battery rests again;
+    cleared 5% above the limit, or as soon as it is being charged."""
+    global _starter_low_on
+    st = _starter_status(r)
+    lim = int(getattr(cfg, "STARTER_LOW_SOC", 50))
+    if st["state"] == "charging":
+        _starter_low_on = False
+    elif st["state"] == "rest":
+        if st["soc"] < lim:
+            _starter_low_on = True
+        elif st["soc"] >= lim + 5:
+            _starter_low_on = False
+    if not _starter_low_on:
+        return {}
+    if st["soc"] is None:
+        return {"starter_low": "The starter battery was low at its last reading. Charge it soon."}
+    return {"starter_low": "The starter battery is at about %d%% (%.1f V). Charge it soon - a long "
+                           "drive or a mains charger - or it may not start the van." % (st["soc"], st["v"])}
 
 
 def _battery_alerts(b):
@@ -1157,7 +1221,10 @@ _ALERT_DEFS = [
                "which is why the bar is set well above it." % _ALERT_ENGINE_V,
         "limits": "It cannot detect movement, so it fires while you are still stationary "
                   "with the engine on - deliberately early. It only warns someone with a "
-                  "page open; a buzzer wired to the hub would not have that limitation.",
+                  "page open; a buzzer wired to the hub would not have that limitation. "
+                  "A mains charger on the starter battery looks like the engine: switch on "
+                  "\"Starter battery on charge\" below while one is connected. That stops "
+                  "this alert, and the engine reading, until the GPS sees the van move.",
     },
     {
         "id": "low_battery",
@@ -1168,6 +1235,20 @@ _ALERT_DEFS = [
         "why": "Raised when the battery's charge falls below the limit set below, and cleared "
                "once it is 3% above it again, so it does not flicker on and off at the limit.",
         "limits": "Only while the battery monitor is in range.",
+    },
+    {
+        "id": "starter_low",
+        "name": "Starter battery low",
+        "level": "warn",
+        "title": "Starter battery low",
+        "detail": "The starter battery is low. Charge it soon.",
+        "why": "Raised when the starter battery, having rested at least 30 minutes with the "
+               "engine off, is below the charge set below, and cleared once it is 5% above it "
+               "or being charged. Its charge is worked out from its voltage, on the chart for "
+               "the battery type set below.",
+        "limits": "Only while the DC-DC charger is in range, which reads the starter battery's "
+                  "voltage. Only at rest: while charging, and for 30 minutes after, the "
+                  "voltage reads high and says nothing of the charge.",
     },
     {
         "id": "battery_health",
@@ -1202,9 +1283,7 @@ def _alert_tick():
     global _alert_hold, _alert_active
     r = state["renogy"]
     v = _snapshot("victron", "victron_seen", cfg.VICTRON_STALE_MS)
-    ren_ok = bool(r.get("connected"))
-    engine = ren_ok and ((r.get("alt_a") or 0) > 0.05
-                         or (r.get("alt_v") or 0) >= _ALERT_ENGINE_V)
+    engine = _engine_reading(r)
     mains = bool(v.get("connected"))
     _engine_note(engine)
     if engine and mains:
@@ -1215,6 +1294,7 @@ def _alert_tick():
     # adding an entry - the dispatch no longer names a single id.
     conditions = {"mains_while_running": engine and mains}
     batt = _battery_alerts(state["battery"])
+    batt.update(_starter_alert(r))
     for k in batt:
         conditions[k] = True
     out = []
@@ -2172,7 +2252,10 @@ async def settings_set(obj):
            "location": dict(cur["location"]), "api_token": cur["api_token"],
            "alerts": {"off": list(cur["alerts"]["off"]),
                       "sound": cur["alerts"]["sound"],
-                      "low_soc": cur["alerts"].get("low_soc", 20)},
+                      "low_soc": cur["alerts"].get("low_soc", 20),
+                      "starter_soc": cur["alerts"].get("starter_soc", 50),
+                      "starter_type": cur["alerts"].get("starter_type", "agm"),
+                      "starter_charger": cur["alerts"].get("starter_charger", False)},
            "display": dict(cur["display"]),
            "checklist": list(cur["checklist"]),
            "switches": list(cur["switches"]),
@@ -2288,6 +2371,19 @@ async def settings_set(obj):
                 new["alerts"]["low_soc"] = max(5, min(80, int(al["low_soc"])))
             except (TypeError, ValueError):
                 return {"ok": False, "error": "the low battery limit must be a number"}
+        if "starter_soc" in al:
+            try:
+                new["alerts"]["starter_soc"] = max(10, min(90, int(al["starter_soc"])))
+            except (TypeError, ValueError):
+                return {"ok": False, "error": "the starter battery limit must be a number"}
+        if "starter_type" in al:
+            if al["starter_type"] not in settings.STARTER_TYPES:
+                return {"ok": False, "error": "the starter battery type must be agm or flooded"}
+            new["alerts"]["starter_type"] = al["starter_type"]
+        if "starter_charger" in al:
+            if not isinstance(al["starter_charger"], bool):
+                return {"ok": False, "error": "starter battery on charge must be true or false"}
+            new["alerts"]["starter_charger"] = al["starter_charger"]
         if "off" in al:
             if not isinstance(al["off"], list):
                 return {"ok": False, "error": "alerts.off must be a list"}

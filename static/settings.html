@@ -271,6 +271,30 @@
     <input id="lowsoc" type="number" min="5" max="80" step="1" style="width:80px">
     <span class="sub" style="margin:0">% charge</span>
   </div>
+  <div class="label" style="margin-top:16px">Starter battery</div>
+  <div class="sub">Its charge is worked out from its voltage once it has rested 30 minutes, on the
+    chart for its type: a flooded battery reads about 0.25&nbsp;V lower than an AGM for the same
+    charge. Switch the warning itself on or off in the list above.</div>
+  <div class="ctl" style="margin-top:8px">
+    <label class="sub" style="margin:0;min-width:150px">Battery type</label>
+    <select id="startertype" style="background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px">
+      <option value="agm">AGM / sealed (most stop-start vans)</option>
+      <option value="flooded">Standard / flooded</option>
+    </select>
+  </div>
+  <div class="ctl" style="margin-top:8px">
+    <label class="sub" style="margin:0;min-width:150px">Warn below</label>
+    <input id="startersoc" type="number" min="10" max="90" step="5" style="width:80px">
+    <span class="sub" style="margin:0">% charge</span>
+  </div>
+  <div class="ctl" style="margin-top:8px">
+    <label class="tgl"><input type="checkbox" id="startercharger" aria-label="Starter battery on charge"><span></span></label>
+    <span class="sub" style="margin:0"><b>Starter battery on charge</b> &mdash; switch on while a mains
+      charger (a CTEK, say) is on the starter battery. It lifts the alternator line enough to look
+      like the engine running, and the DC-DC may draw from it. While on, the engine is not judged
+      from the alternator and &ldquo;Still plugged in&rdquo; cannot go off. It switches itself off
+      when the GPS sees the van move.</span>
+  </div>
   <div class="ctl" style="margin-top:12px">
     <button class="btn" id="alerttest">Test alarm</button>
     <span class="sub" id="alerttestnote" style="margin:0">Sounds on every screen and phone
@@ -826,6 +850,9 @@ async function load(){
     alertsOff = (S.alerts && S.alerts.off) ? S.alerts.off.slice() : [];
     alertSound = !(S.alerts && S.alerts.sound === false);
     $('lowsoc').value = (S.alerts && S.alerts.low_soc) || 20;
+    $('startersoc').value = (S.alerts && S.alerts.starter_soc) || 50;
+    $('startertype').value = (S.alerts && S.alerts.starter_type) || 'agm';
+    $('startercharger').checked = !!(S.alerts && S.alerts.starter_charger);
     paintMode(); paintAssign(); paintNets(); paintApAlways();
     paintAlerts(); paintAlertSound();
     if(S.display) disp = {on:S.display.on !== false, invert:!!S.display.invert,
@@ -1203,7 +1230,10 @@ $('save').onclick = async ()=>{
   body.location={lat:$('lat').value.trim(), lon:$('lon').value.trim(), name:$('place').value.trim(),
                  source:wxMode, from:locFrom};
   body.alerts = {off: alertsOff.slice(), sound: alertSound,
-                 low_soc: parseInt($('lowsoc').value, 10) || 20};
+                 low_soc: parseInt($('lowsoc').value, 10) || 20,
+                 starter_soc: parseInt($('startersoc').value, 10) || 50,
+                 starter_type: $('startertype').value,
+                 starter_charger: $('startercharger').checked};
   body.panel = {click_volume: +$('clickvol').value, alarm_volume: +$('alarmvol').value};
   body.switches = Array.prototype.map.call(document.querySelectorAll('[data-swn]'),
     function(e){ return e.value.trim(); });

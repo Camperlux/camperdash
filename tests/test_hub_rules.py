@@ -348,4 +348,47 @@ hub._engine_now = False
 assert hub._starter_status({"connected": False, "alt_v": 12.6})["state"] == "offline"
 ok("starter battery: charge from the resting voltage (sealed lead-acid chart); none while charging; settling after a drive")
 
+# ---- the starter battery's type and its low warning ------------------------------------------
+assert hub.starter_soc(12.41, "flooded") == 80 and hub.starter_soc(12.41, "agm") == 60
+assert hub.starter_soc(12.07, "flooded") == 50 and hub.starter_soc(11.59, "flooded") == 0
+hub.cfg.STARTER_TYPE = "flooded"
+assert hub.starter_soc(12.41) == 80                       # the setting picks the chart
+hub.cfg.STARTER_TYPE, hub.cfg.STARTER_LOW_SOC = "agm", 50
+hub._engine_now, hub._engine_off_at = False, hub.ticks_ms() - 31 * 60000
+assert hub._starter_alert({"connected": True, "alt_v": 12.6}) == {}
+d = hub._starter_alert({"connected": True, "alt_v": 11.6})["starter_low"]
+assert "about 0%" in d and "11.6 V" in d
+assert "starter_low" in hub._starter_alert({"connected": True, "alt_v": 12.25})       # 50%: not 5% over yet
+assert "starter_low" in hub._starter_alert({"connected": False, "alt_v": 12.6})       # out of range: kept
+assert hub._starter_alert({"connected": True, "alt_v": 12.35}) == {}                  # 56%: cleared
+hub._starter_alert({"connected": True, "alt_v": 11.6})
+assert hub._starter_alert({"connected": True, "alt_v": 13.4}) == {}                   # charging clears it
+hub._engine_off_at = hub.ticks_ms() - 5 * 60000
+assert hub._starter_alert({"connected": True, "alt_v": 11.9}) == {}                   # settling: not judged
+assert "starter_low" in [x["id"] for x in hub._alert_defs()]
+r = hubsim.run(hub.settings_set({"alerts": {"starter_soc": 95, "starter_type": "flooded"}}))
+assert r["ok"] and r["settings"]["alerts"]["starter_soc"] == 90 and r["settings"]["alerts"]["starter_type"] == "flooded"
+assert hub.cfg.STARTER_TYPE == "flooded" and hub.cfg.STARTER_LOW_SOC == 90
+assert not hubsim.run(hub.settings_set({"alerts": {"starter_type": "lithium"}}))["ok"]
+assert settings.load(refresh=True)["alerts"]["starter_type"] == "flooded"
+hubsim.run(hub.settings_set({"alerts": {"starter_soc": 50, "starter_type": "agm"}}))
+ok("starter battery: AGM or flooded chart from Settings; a low warning at rest, held out of range, cleared 5% over or charging")
+
+# ---- a mains charger on the starter battery ----------------------------------------------------
+r = hubsim.run(hub.settings_set({"alerts": {"starter_charger": True}}))
+assert r["ok"] and r["settings"]["alerts"]["starter_charger"] is True and cfg.STARTER_CHARGER
+assert not hubsim.run(hub.settings_set({"alerts": {"starter_charger": "yes"}}))["ok"]
+assert "mains_while_running" not in alerts_with(alt_a=0.82, alt_v=13.2)    # the CTEK, as measured
+assert "mains_while_running" not in alerts_with(alt_a=5.0, alt_v=14.4)     # a charger in bulk
+assert hub._engine_now is False
+_gps = hub.gps_status
+hub.gps_status = lambda: {"enabled": True, "fix": True, "speed_kn": 0.6}  # GPS jitter, parked
+assert "mains_while_running" not in alerts_with(alt_a=2.0, alt_v=14.0)
+hub.gps_status = lambda: {"enabled": True, "fix": True, "speed_kn": 12.0}  # driving off
+assert "mains_while_running" in alerts_with(alt_a=2.0, alt_v=14.0)
+assert cfg.STARTER_CHARGER is False
+assert settings.load(refresh=True)["alerts"]["starter_charger"] is False
+hub.gps_status = _gps
+ok("starter on charge: the alternator line is not the engine; switched off (and saved) once the GPS sees the van move")
+
 print("\nALL OK - %d checks" % len(passed))

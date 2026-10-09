@@ -69,6 +69,7 @@ SWITCH_ICONS = ("bulb", "sun", "drop", "snow", "flame", "fan", "bolt", "plug", "
                 "siren", "switch", "clock")
 DEFAULT_SWITCH_ICONS = ["drop", "snow", "home", "bolt", "bulb", "power"]
 CHECKLIST_MAX = 10          # items
+STARTER_TYPES = ("agm", "flooded")      # the starter battery's kind: its voltage chart
 CHECKLIST_ITEM_MAX = 32     # characters each - what fits on the display
 
 
@@ -151,7 +152,14 @@ def defaults():
         "location": loc,
         "api_token": cfg.API_TOKEN,
         "alerts": {"off": list(cfg.ALERTS_OFF), "sound": cfg.ALERT_SOUND,
-                   "low_soc": getattr(cfg, "LOW_SOC", 20)},
+                   "low_soc": getattr(cfg, "LOW_SOC", 20),
+                   # the starter battery: warn below this charge, read against
+                   # this battery's voltage chart (main.STARTER_CHARTS)
+                   "starter_soc": getattr(cfg, "STARTER_LOW_SOC", 50),
+                   "starter_type": getattr(cfg, "STARTER_TYPE", "agm"),
+                   # a mains charger on the starter battery: its voltage, and the
+                   # DC-DC passing it on, are not the engine (main._engine_reading)
+                   "starter_charger": False},
         "display": _display_defaults(),
         "checklist": list(getattr(cfg, "CHECKLIST", DEFAULT_CHECKLIST)),
         "switches": list(getattr(cfg, "SWITCH_NAMES", DEFAULT_SWITCHES)),
@@ -214,6 +222,12 @@ def load(refresh=False):
                 s["alerts"]["sound"] = al["sound"]
             if isinstance(al.get("low_soc"), int):
                 s["alerts"]["low_soc"] = max(5, min(80, al["low_soc"]))
+            if isinstance(al.get("starter_soc"), int):
+                s["alerts"]["starter_soc"] = max(10, min(90, al["starter_soc"]))
+            if al.get("starter_type") in STARTER_TYPES:
+                s["alerts"]["starter_type"] = al["starter_type"]
+            if isinstance(al.get("starter_charger"), bool):
+                s["alerts"]["starter_charger"] = al["starter_charger"]
         cl = clean_checklist(saved.get("checklist"))
         if cl is not None:
             s["checklist"] = cl
@@ -298,6 +312,9 @@ def apply():
     cfg.ALERTS_OFF = list(s["alerts"]["off"])
     cfg.ALERT_SOUND = s["alerts"]["sound"]
     cfg.LOW_SOC = s["alerts"]["low_soc"]
+    cfg.STARTER_LOW_SOC = s["alerts"]["starter_soc"]
+    cfg.STARTER_TYPE = s["alerts"]["starter_type"]
+    cfg.STARTER_CHARGER = s["alerts"]["starter_charger"]
     cfg.CHECKLIST = list(s["checklist"])
     cfg.SWITCH_NAMES = list(s["switches"])
     cfg.SWITCH_ICONS = list(s["switch_icons"])
@@ -328,7 +345,10 @@ def public():
     d["victron_key_set"] = bool(s["devices"]["victron_key"])
     return {"wifi": w, "devices": d, "location": dict(s["location"]),
             "alerts": {"off": list(s["alerts"]["off"]), "sound": s["alerts"]["sound"],
-                       "low_soc": s["alerts"]["low_soc"]},
+                       "low_soc": s["alerts"]["low_soc"],
+                       "starter_soc": s["alerts"]["starter_soc"],
+                       "starter_type": s["alerts"]["starter_type"],
+                       "starter_charger": s["alerts"]["starter_charger"]},
             "display": dict(s["display"]),
             "checklist": list(s["checklist"]),
             "switches": list(s["switches"]),
